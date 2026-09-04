@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-soc-bg text-soc-text font-sans antialiased overflow-x-hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f293d;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Research SOC Grid Lines */
+.bg-grid-pattern {
+  background-size: 30px 30px;
+  background-image: 
+    linear-gradient(to right, rgba(31, 41, 61, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(31, 41, 61, 0.25) 1px, transparent 1px);
+}
+
+/* Glassmorphism Card Style */
+.soc-card {
+  @apply bg-soc-card border border-soc-border rounded-lg p-4 transition-all duration-200;
+}
+
+.soc-card-hover {
+  @apply hover:border-cyan-500/40 hover:shadow-soc-glow-cyan;
+}
