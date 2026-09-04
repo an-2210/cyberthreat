@@ -1,0 +1,111 @@
+# AI-Based Cyber Threat Detection & Intelligence Generation
+# Research Configuration File
+
+system:
+  name: "AI-Based Cyber Threat Detection and Intelligence Generation"
+  version: "1.0.0"
+  seed: 42
+  verbose: true
+
+paths:
+  raw_data_dir: "data/raw"
+  cicids2017_dir: "data/raw/CICIDS2017"
+  unsw_nb15_dir: "data/raw/UNSW-NB15"
+  interim_data_dir: "data/interim"
+  processed_data_dir: "data/processed"
+  external_data_dir: "data/external"
+  checkpoints_dir: "models/checkpoints"
+  artifacts_dir: "models/artifacts"
+  results_dir: "results"
+  figures_dir: "results/figures"
+  tables_dir: "results/tables"
+  metrics_dir: "results/metrics"
+  reports_dir: "results/reports"
+
+data:
+  test_size: 0.20
+  val_size: 0.10
+  stratify: true
+  chunk_size: 100000  # for low-memory reading of large CSVs
+  target_column_cicids2017: "Label"
+  target_column_unsw_nb15: "label"
+  handle_infinite: true
+  handle_missing: "median"  # options: median, mean, drop
+  scaling_method: "robust"  # options: robust, standard, minmax
+  categorical_encoding: "onehot"  # options: onehot, ordinal, target
+
+preprocessing:
+  remove_duplicate_rows: true
+  remove_constant_features: true
+  constant_variance_threshold: 0.0
+  outlier_clip_quantile: [0.001, 0.999]
+
+models:
+  baselines:
+    logistic_regression:
+      max_iter: 1000
+      C: 1.0
+      solver: "lbfgs"
+    random_forest:
+      n_estimators: 100
+      max_depth: 20
+      random_state: 42
+      n_jobs: -1
+    svm:
+      kernel: "rbf"
+      C: 1.0
+      max_iter: 2000
+  
+  advanced:
+    xgboost:
+      n_estimators: 200
+      max_depth: 8
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      random_state: 42
+      n_jobs: -1
+
+anomaly_detection:
+  isolation_forest:
+    n_estimators: 150
+    contamination: 0.1
+    random_state: 42
+    n_jobs: -1
+  autoencoder:
+    latent_dim: 16
+    hidden_dims: [64, 32]
+    learning_rate: 0.001
+    epochs: 50
+    batch_size: 256
+    loss_fn: "mse"
+
+fusion:
+  default_alpha: 0.6  # FinalScore = alpha * supervised_conf + (1-alpha) * anomaly_score
+  alpha_search_grid: [0.0, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]
+  severity_thresholds:
+    critical: 0.85
+    high: 0.70
+    medium: 0.45
+    low: 0.00
+
+explainability:
+  shap:
+    background_samples: 200
+    top_k_features: 10
+    plot_type: "bar"
+
+mitre_attack:
+  stix_data_path: "data/external/enterprise-attack.json"
+  confidence_threshold: 0.60
+
+rag_cti:
+  embedding_model: "all-MiniLM-L6-v2"
+  vector_store_type: "faiss"
+  vector_store_dir: "models/artifacts/vector_store"
+  top_k_retrieval: 5
+  max_report_tokens: 1500
+
+experiments:
+  output_format: "json"
+  track_computational_cost: true
