@@ -42,8 +42,16 @@ class CICIDS2017Adapter(BaseDatasetAdapter):
         if self.target_column not in df_clean.columns:
             raise KeyError(f"Target column '{self.target_column}' not found in DataFrame. Existing columns: {list(df_clean.columns)}")
 
-        y_multi = df_clean[self.target_column].astype(str).str.strip()
-        y_binary = (y_multi.str.upper() != "BENIGN").astype(int)
+        # The web-attack labels contain U+FFFD where the original en dash was; map it to a plain ASCII hyphen.
+        y_multi = (
+            df_clean[self.target_column]
+            .astype(str)
+            .str.replace("�", "-", regex=False)
+            .str.replace(r"\s+", " ", regex=True)
+            .str.strip()
+            .rename("label")
+        )
+        y_binary = (y_multi.str.upper() != "BENIGN").astype(int).rename("is_attack")
 
         X = df_clean.drop(columns=[self.target_column])
         return X, y_binary, y_multi

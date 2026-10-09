@@ -1,37 +1,13 @@
-# Core Data Science & ML
+# Core dependencies for the CIC-IDS2017 pipeline (ingestion, audit, preprocessing,
+# Random Forest / XGBoost training, evaluation, tests).
+# Future-milestone packages are listed in requirements-future.txt.
+
 pandas>=2.0.0
 numpy>=1.24.0
-scipy>=1.10.0
 scikit-learn>=1.3.0
-xgboost>=2.0.0
-lightgbm>=4.0.0
-torch>=2.0.0
-
-# Explainability & Anomaly Detection
-shap>=0.42.0
-
-# Vector Store & Retrieval (RAG)
-faiss-cpu>=1.7.4
-
-# Data Processing & Serialization
-pyyaml>=6.0
-pydantic>=2.0.0
+xgboost>=2.0.0       # on macOS also needs: brew install libomp
 joblib>=1.3.0
-tabulate>=0.9.0
-
-# Visualization
+pyyaml>=6.0
 matplotlib>=3.7.0
-seaborn>=0.12.0
-
-# Notebooks & Development
-jupyter>=1.0.0
-notebook>=7.0.0
-
-# API & Web Framework
-fastapi>=0.100.0
-uvicorn>=0.22.0
-python-multipart>=0.0.6
-
-# Testing & Code Quality
+seaborn>=0.12.0      # imported by src/evaluation/experiments.py (used by existing tests)
 pytest>=7.4.0
-pytest-cov>=4.1.0
