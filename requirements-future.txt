@@ -1,0 +1,30 @@
+# Planned for later milestones (anomaly detection, SHAP, MITRE mapping, RAG, API/dashboard).
+# NOT used by the CIC-IDS2017 pipeline. Install only when those modules are implemented:
+#   pip install -r requirements-future.txt
+
+# Deep learning & gradient boosting alternatives
+torch>=2.0.0
+lightgbm>=4.0.0
+scipy>=1.10.0
+
+# Explainability
+shap>=0.42.0
+
+# Vector Store & Retrieval (RAG)
+faiss-cpu>=1.7.4
+
+# Validation & tabular utilities
+pydantic>=2.0.0
+tabulate>=0.9.0
+
+# Notebooks
+jupyter>=1.0.0
+notebook>=7.0.0
+
+# API & Web Framework
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-multipart>=0.0.6
+
+# Coverage reporting
+pytest-cov>=4.1.0

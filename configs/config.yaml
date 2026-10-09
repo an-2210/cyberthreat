@@ -33,6 +33,20 @@ data:
   handle_missing: "median"  # options: median, mean, drop
   scaling_method: "robust"  # options: robust, standard, minmax
   categorical_encoding: "onehot"  # options: onehot, ordinal, target
+  cicids2017:
+    # Identifier-like or label-derived columns removed before modelling (case-insensitive substring match).
+    identifier_patterns: ["flow id", "source ip", "src ip", "destination ip", "dst ip", "timestamp", "label", "attack_cat"]
+    # Single-feature leakage scan on the training split: rows sampled and AUC separability threshold (report only).
+    leakage_scan_rows: 200000
+    leakage_auc_threshold: 0.99
+
+training:
+  tasks: ["binary", "multiclass"]  # binary = BENIGN vs ATTACK; multiclass = one id per CIC-IDS2017 label
+  sampling:
+    # "stratified": cap the TRAINING split at max_train_rows, keeping label proportions (same subsample for every model).
+    # "none": train on every training row. Validation and test splits are never subsampled.
+    strategy: "stratified"
+    max_train_rows: 500000  # null = no cap
 
 preprocessing:
   remove_duplicate_rows: true
