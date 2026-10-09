@@ -155,12 +155,81 @@ pip install -r requirements.txt
 ```bash
 PYTHONPATH=. pytest tests/ -v
 ```
+The CIC-IDS2017 tests (`tests/test_cicids2017_synthetic.py`) use generated synthetic CSVs. They do **not** need the real dataset and do **not** measure detection performance.
 
 ### 3. Run Exploratory Data Analysis (EDA)
 Launch Jupyter Notebook to inspect EDA pipelines and figures:
 ```bash
 jupyter notebook notebooks/01_data_exploration.ipynb
 ```
+
+> **macOS:** XGBoost needs the OpenMP runtime. If `import xgboost` fails with `Library not loaded: libomp.dylib`, run `brew install libomp`.
+
+---
+
+## 🧭 CIC-IDS2017 Detection Pipeline
+
+Implemented scope: CIC-IDS2017 only, supervised Random Forest and XGBoost, binary (BENIGN vs ATTACK) and multiclass (one id per label) tasks.
+
+### Run on the real CSVs
+Place the official CSVs under `data/raw/CICIDS2017/`. Sub-folders are searched, so the `MachineLearningCVE/` folder from the official download works as-is. Then, from the repository root:
+```bash
+python -m src.run_cicids2017 --config configs/config.yaml
+```
+Useful options:
+```bash
+python -m src.run_cicids2017 --tasks binary                 # one task only
+python -m src.run_cicids2017 --sampling none                # train on every training row (slower, more memory)
+python -m src.run_cicids2017 --max-train-rows 100000        # cap the training split (0 = no cap)
+python -m src.run_cicids2017 --raw-dir /path/to/csvs --results-dir /tmp/out
+```
+Missing expected files are reported and skipped, and the run continues with what is present. It fails only when no CSV is found at all.
+
+### What the pipeline does
+1. **Load**: reads each CSV separately, strips the padded header names, drops the duplicated `Fwd Header Length` column only when its values are identical to the original, and downcasts numerics to float32 to limit memory.
+2. **Audit** (on the merged raw data, before cleaning): missing values, `Infinity`/infinite values, negatives and out-of-range ports, exact duplicates, feature rows with conflicting labels, constant columns, class distribution and per-file label composition.
+3. **Leakage guard**: removes identifier-like columns by name (flow IDs, IP addresses, timestamps, label-derived names). Scans the **training** split for single features with near-perfect separability and reports them.
+4. **Split, then fit**: removes exact duplicate rows, applies a stratified train/validation/test split, and fits imputation, constant-feature removal, scaling and encoding on the training split only.
+5. **Sampling**: the training split can be capped at `training.sampling.max_train_rows`, keeping label proportions. The same rows are used for both models. Validation and test rows are never subsampled.
+6. **Train**: Random Forest, and XGBoost with early stopping on the validation split.
+7. **Evaluate** on the held-out test split: precision, recall, F1 and FPR/FNR for the attack class; macro/weighted scores, per-class results and one-vs-rest ROC-AUC for multiclass; confusion matrices; ROC curve for the binary task.
+
+### Outputs
+| Path | Content |
+|---|---|
+| `results/reports/cicids2017_data_quality_report.json` | Audit: missing, infinite, duplicates, invalid values, class counts |
+| `results/reports/cicids2017_run_summary.json` | Run record: seed, sampling, split sizes, loader report, feature list, data source |
+| `results/tables/cicids2017_column_quality.csv`, `cicids2017_class_distribution.csv`, `cicids2017_class_by_source_file.csv` | Audit tables |
+| `results/tables/cicids2017_single_feature_leakage_scan.csv` | Per-feature separability on the training split |
+| `results/tables/cicids2017_model_comparison.csv` | Test-set comparison of all models and tasks |
+| `results/metrics/cicids2017_{binary,multiclass}_{random_forest,xgboost}.json` | Full test metrics, confusion matrix, top feature importances |
+| `results/figures/*.png` | Class distribution, label composition by file, column quality, confusion matrices, binary ROC |
+| `models/artifacts/cicids2017_preprocessing_pipeline.joblib`, `cicids2017_{task}_{model}.joblib` | Fitted preprocessing and classifiers |
+
+Every output records `data_source`. Real runs say `real CIC-IDS2017 CSVs`; the synthetic tests say `synthetic test fixture`.
+
+### Configuration
+All settings are in `configs/config.yaml`: `training.tasks`, `training.sampling` (strategy and row cap), `models.baselines.random_forest`, `models.advanced.xgboost`, `data.cicids2017` (identifier patterns, leakage-scan size and threshold), and the split sizes under `data`. `system.seed` seeds the split, the sampler and both models.
+
+### Using the saved models (inference)
+Artifacts live in `models/artifacts/`; `cicids2017_schema.json` lists the input columns, model features and labels.
+```python
+from src.models.inference import CICIDS2017Detector
+det = CICIDS2017Detector.load("binary", "xgboost")   # task: binary | multiclass; model: random_forest | xgboost
+labels = det.predict(raw_df)        # 'BENIGN' / 'ATTACK' (multiclass: the 15 label names)
+proba = det.predict_proba(raw_df)   # (n_rows, n_labels); columns follow det.labels
+```
+- **Input**: a DataFrame of the 77 raw feature columns (`schema["input_columns"]`), with stripped names and no `Label` column. Extra columns are ignored; missing ones raise `ValueError`.
+- **Preprocessing**: the saved pipeline (`cicids2017_preprocessing_pipeline.joblib`) is fitted on the training split only. It is applied to inputs automatically.
+- **Labels**: binary `[BENIGN, ATTACK]` (1 = attack); multiclass order = `schema["tasks"]["multiclass"]["labels"]`, which is also the column order of `predict_proba`.
+- `predict` equals the argmax of `predict_proba` for every saved model (checked by tests and on real rows).
+
+### Known limitations
+- Metrics are only meaningful when produced by running the pipeline on the official CSVs. The synthetic tests check code behaviour only.
+- The default training cap (500,000 rows) keeps runtime and model size manageable. Set `max_train_rows: null` to train on the full training split.
+- Rare classes (Heartbleed, Infiltration, SQL injection) have very few rows. They can be absent from the test split, and their per-class scores are then undefined.
+- Duplicate removal is exact (all feature values and the label must match).
+- Not yet implemented, by design: UNSW-NB15, anomaly detection, SHAP, MITRE mapping, RAG and the dashboard.
 
 ---
 
