@@ -1,0 +1,52 @@
+{
+  "experiment": "rare_class_experiment",
+  "max_per_class": 60000,
+  "variants": {
+    "capped": "per-class cap, no class weights",
+    "capped_weighted": "per-class cap + sqrt-inverse-frequency sample weights (mean 1)"
+  },
+  "hyperparameters": "unchanged from configs/config.yaml (no tuning)",
+  "early_stopping": "XGBoost on validation split only",
+  "seed": 42,
+  "split": {
+    "train_before_cap": 1749823,
+    "train_after_cap": 264033,
+    "validation": 249974,
+    "test": 499951
+  },
+  "train_counts_after_cap": {
+    "BENIGN": 60000,
+    "Bot": 1377,
+    "DDoS": 60000,
+    "DoS GoldenEye": 7258,
+    "DoS Hulk": 60000,
+    "DoS Slowhttptest": 3692,
+    "DoS slowloris": 3711,
+    "FTP-Patator": 4225,
+    "Heartbleed": 7,
+    "Infiltration": 26,
+    "PortScan": 60000,
+    "SSH-Patator": 2249,
+    "Web Attack - Brute Force": 1014,
+    "Web Attack - Sql Injection": 16,
+    "Web Attack - XSS": 458
+  },
+  "class_names": [
+    "BENIGN",
+    "Bot",
+    "DDoS",
+    "DoS GoldenEye",
+    "DoS Hulk",
+    "DoS Slowhttptest",
+    "DoS slowloris",
+    "FTP-Patator",
+    "Heartbleed",
+    "Infiltration",
+    "PortScan",
+    "SSH-Patator",
+    "Web Attack - Brute Force",
+    "Web Attack - Sql Injection",
+    "Web Attack - XSS"
+  ],
+  "data_source": "real CIC-IDS2017 CSVs"
+}
