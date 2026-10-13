@@ -11,3 +11,8 @@ pyyaml>=6.0
 matplotlib>=3.7.0
 seaborn>=0.12.0      # imported by src/evaluation/experiments.py (used by existing tests)
 pytest>=7.4.0
+
+# Backend API for the SOC frontend (app/backend).
+fastapi>=0.110.0
+uvicorn>=0.27.0
+python-multipart>=0.0.9   # required by FastAPI for file uploads
