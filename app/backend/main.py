@@ -211,3 +211,92 @@ async def predict(file: UploadFile = File(...), modelKey: str = Form(...)) -> Di
         "rows": rows,
         "milliseconds": round(elapsed_ms, 1),
     }
+
+
+# ---------------------------------------------------------------------------
+# anomaly detection, hybrid fusion and unseen attacks
+# ---------------------------------------------------------------------------
+
+HYBRID = METRICS / "cicids2017_hybrid_detection.json"
+HYBRID_TABLE = RESULTS / "tables" / "cicids2017_hybrid_per_class_detection.csv"
+LEAVE_ONE_OUT = METRICS / "cicids2017_leave_one_attack_out.json"
+
+DETECTOR_LABELS = {
+    "supervised_xgboost": "XGBoost (supervised)",
+    "isolation_forest_raw": "Isolation Forest (raw features)",
+    "isolation_forest_log": "Isolation Forest (log features)",
+    "autoencoder": "Autoencoder (benign only)",
+    "hybrid_fusion": "Fusion (XGBoost + autoencoder)",
+}
+
+
+@app.get("/api/detectors")
+def detectors() -> Dict[str, Any]:
+    """Test-set comparison of the supervised model, the anomaly detectors and their fusion (all at 1% benign FPR)."""
+    hybrid = _read_json(HYBRID)
+    table = pd.read_csv(HYBRID_TABLE) if HYBRID_TABLE.exists() else None
+    rows = []
+    for key, label in DETECTOR_LABELS.items():
+        m = hybrid["test_results"].get(key)
+        if m is None:
+            continue
+        rows.append({
+            "key": key,
+            "label": label,
+            "recall": m["recall"],
+            "precision": m["precision"],
+            "f1": m["f1"],
+            "fpr": m["fpr"],
+            "rocAuc": m["roc_auc"],
+        })
+    per_class = []
+    if table is not None:
+        for _, r in table.iterrows():
+            per_class.append({
+                "class": str(r["class"]),
+                "testRows": int(r["test_rows"]),
+                "isAttack": bool(r["is_attack"]),
+                "supervised": float(r["supervised_xgboost"]),
+                "autoencoder": float(r["autoencoder"]),
+                "fusion": float(r["hybrid_fusion"]),
+            })
+    return {
+        "targetFpr": hybrid["target_fpr"],
+        "detectors": rows,
+        "anomalyAucOnValidation": hybrid["anomaly_candidate_validation_roc_auc"],
+        "chosenAnomalyDetector": hybrid["anomaly_candidate_chosen"],
+        "fusion": {
+            "alpha": hybrid["fusion"]["alpha"],
+            "threshold": hybrid["fusion"]["threshold"],
+            "validationF1": hybrid["fusion"]["val_f1"],
+        },
+        "perClass": per_class,
+    }
+
+
+@app.get("/api/unseen-attacks")
+def unseen_attacks() -> Dict[str, Any]:
+    """Leave-one-attack-out results: each attack type is removed from the supervised training and then tested."""
+    data = _read_json(LEAVE_ONE_OUT)
+    s = data["summary"]
+    folds = [
+        {
+            "heldOut": f["held_out"],
+            "testRows": f["test_rows_held_out"],
+            "supervised": f["supervised_detection"],
+            "autoencoder": f["autoencoder_detection"],
+            "fusion": f["fusion_detection"],
+            "fusionAlpha": f["fusion_alpha"],
+            "falsePositiveRate": f["supervised_fpr"],
+        }
+        for f in data["folds"]
+    ]
+    return {
+        "targetFpr": s["target_fpr"],
+        "baseline": next(f for f in folds if f["heldOut"] == "none"),
+        "folds": [f for f in folds if f["heldOut"] != "none"],
+        "meanDetection": s["mean_detection_over_held_out_attacks"],
+        "detectedAtLeastHalf": s["held_out_attacks_detected_at_least_50pct"],
+        "nHeldOut": s["n_held_out_attacks"],
+        "nLowSample": s["n_low_sample_held_out"],
+    }
