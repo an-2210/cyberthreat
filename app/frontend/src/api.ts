@@ -104,6 +104,7 @@ export interface DetectorsResponse {
 
 export interface HeldOutFold {
   heldOut: string;
+  heldOutLabels?: string[];
   testRows: number;
   supervised: number;
   autoencoder: number;
@@ -146,6 +147,7 @@ export const api = {
   figures: () => getJson<string[]>('/api/figures'),
   detectors: () => getJson<DetectorsResponse>('/api/detectors'),
   unseenAttacks: () => getJson<UnseenAttacksResponse>('/api/unseen-attacks'),
+  familyHoldout: () => getJson<UnseenAttacksResponse>('/api/family-holdout'),
   figureUrl: (name: string) => `${API_URL}/figures/${name}`,
 
   predict: async (file: File, modelKey: string): Promise<PredictionResult> => {

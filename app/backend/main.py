@@ -300,3 +300,35 @@ def unseen_attacks() -> Dict[str, Any]:
         "nHeldOut": s["n_held_out_attacks"],
         "nLowSample": s["n_low_sample_held_out"],
     }
+
+
+FAMILY_HOLDOUT = METRICS / "cicids2017_family_holdout.json"
+
+
+@app.get("/api/family-holdout")
+def family_holdout() -> Dict[str, Any]:
+    """Whole attack families held out of supervised training together (harder test than one type at a time)."""
+    data = _read_json(FAMILY_HOLDOUT)
+    s = data["summary"]
+    folds = [
+        {
+            "heldOut": f["held_out"],
+            "heldOutLabels": f["held_out_labels"],
+            "testRows": f["test_rows_held_out"],
+            "supervised": f["supervised_detection"],
+            "autoencoder": f["autoencoder_detection"],
+            "fusion": f["fusion_detection"],
+            "fusionAlpha": f["fusion_alpha"],
+            "falsePositiveRate": f["supervised_fpr"],
+        }
+        for f in data["folds"]
+    ]
+    return {
+        "targetFpr": s["target_fpr"],
+        "baseline": next(f for f in folds if f["heldOut"] == "none"),
+        "folds": [f for f in folds if f["heldOut"] != "none"],
+        "meanDetection": s["mean_detection_over_held_out_groups"],
+        "detectedAtLeastHalf": s["held_out_groups_detected_at_least_50pct"],
+        "nHeldOut": s["n_held_out_groups"],
+        "nLowSample": s["n_low_sample_held_out"],
+    }

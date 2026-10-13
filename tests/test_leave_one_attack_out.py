@@ -22,7 +22,7 @@ def test_held_out_attack_is_detected_by_autoencoder_not_supervised():
     labels, y_bin, p, a = _synthetic()
     half = len(labels) // 2
     rec = fold_detection(
-        "HeldAttack",
+        "HeldAttack", ("HeldAttack",),
         p[:half], a[:half], y_bin[:half], labels[:half],
         p[half:], a[half:], y_bin[half:], labels[half:],
         target_fpr=0.01,
@@ -36,7 +36,7 @@ def test_baseline_fold_scores_all_attacks():
     labels, y_bin, p, a = _synthetic()
     half = len(labels) // 2
     rec = fold_detection(
-        NONE,
+        NONE, (),
         p[:half], a[:half], y_bin[:half], labels[:half],
         p[half:], a[half:], y_bin[half:], labels[half:],
         target_fpr=0.01,
@@ -53,10 +53,25 @@ def test_held_out_rows_are_removed_from_validation_choices():
     held_mask = labels[:half] == "HeldAttack"
     p_val[held_mask] = 1.0
     rec = fold_detection(
-        "HeldAttack",
+        "HeldAttack", ("HeldAttack",),
         p_val, a[:half], y_bin[:half], labels[:half],
         p[half:], a[half:], y_bin[half:], labels[half:],
         target_fpr=0.01,
     )
     assert 0.0 <= rec["fusion_alpha"] <= 1.0
     assert rec["supervised_detection"] < 0.05
+
+
+def test_family_holdout_removes_every_member_from_validation():
+    labels, y_bin, p, a = _synthetic()
+    half = len(labels) // 2
+    family = ("KnownAttack", "HeldAttack")  # hold out both attack types together
+    rec = fold_detection(
+        "both attacks",
+        family,
+        p[:half], a[:half], y_bin[:half], labels[:half],
+        p[half:], a[half:], y_bin[half:], labels[half:],
+        target_fpr=0.01,
+    )
+    assert rec["test_rows_held_out"] == int(np.isin(labels[half:], family).sum())
+    assert rec["held_out_labels"] == list(family)
