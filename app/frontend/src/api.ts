@@ -84,6 +84,44 @@ export interface PredictionResult {
   milliseconds: number;
 }
 
+export interface DetectorRow {
+  key: string;
+  label: string;
+  recall: number;
+  precision: number;
+  f1: number;
+  fpr: number;
+  rocAuc: number;
+}
+
+export interface DetectorsResponse {
+  targetFpr: number;
+  detectors: DetectorRow[];
+  anomalyAucOnValidation: Record<string, number>;
+  chosenAnomalyDetector: string;
+  fusion: { alpha: number; threshold: number; validationF1: number };
+}
+
+export interface HeldOutFold {
+  heldOut: string;
+  testRows: number;
+  supervised: number;
+  autoencoder: number;
+  fusion: number;
+  fusionAlpha: number;
+  falsePositiveRate: number;
+}
+
+export interface UnseenAttacksResponse {
+  targetFpr: number;
+  baseline: HeldOutFold;
+  folds: HeldOutFold[];
+  meanDetection: Record<string, number>;
+  detectedAtLeastHalf: Record<string, number>;
+  nHeldOut: number;
+  nLowSample: number;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`);
   if (!res.ok) throw new Error(await errorText(res));
@@ -106,6 +144,8 @@ export const api = {
   models: () => getJson<ModelResult[]>('/api/models'),
   rareClass: () => getJson<RareClassRow[]>('/api/rare-class'),
   figures: () => getJson<string[]>('/api/figures'),
+  detectors: () => getJson<DetectorsResponse>('/api/detectors'),
+  unseenAttacks: () => getJson<UnseenAttacksResponse>('/api/unseen-attacks'),
   figureUrl: (name: string) => `${API_URL}/figures/${name}`,
 
   predict: async (file: File, modelKey: string): Promise<PredictionResult> => {

@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { OverviewTab } from './components/OverviewTab';
 import { DataTab } from './components/DataTab';
 import { ModelsTab } from './components/ModelsTab';
+import { UnseenTab } from './components/UnseenTab';
 import { TryItTab } from './components/TryItTab';
 
-// One page, four tabs, in the order the project runs: overview -> data -> models -> try it.
+// One page, five tabs, in the order the project runs: overview -> data -> models -> unknown attacks -> try it.
 const TABS = [
   { id: 'overview', label: 'Overview', Component: OverviewTab },
   { id: 'data', label: 'Data', Component: DataTab },
   { id: 'models', label: 'Models', Component: ModelsTab },
+  { id: 'unseen', label: 'Unknown attacks', Component: UnseenTab },
   { id: 'try', label: 'Try it', Component: TryItTab },
 ] as const;
 

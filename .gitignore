@@ -70,3 +70,7 @@ node_modules/
 app/frontend/node_modules/
 app/frontend/dist/
 .vite/
+
+# Intermediate caches written by the hybrid and leave-one-attack-out experiments
+results/hybrid_cache/
+results/loao_cache/
