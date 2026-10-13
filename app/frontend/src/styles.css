@@ -1,0 +1,76 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1d2330;
+  --muted: #697184;
+  --border: #dde1e8;
+  --accent: #2563eb;
+  --attack: #dc2626;
+  --ok: #16a34a;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+}
+
+h1, h2, h3 { margin: 0 0 0.5rem; line-height: 1.25; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0 0 0.75rem; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: 0.9em; background: #eef0f4; padding: 0.1rem 0.3rem; border-radius: 4px; }
+
+.app { max-width: 1100px; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+.header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.header h1 { font-size: 1.5rem; margin: 0; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; overflow-x: auto; }
+.tabs button {
+  background: none; border: none; padding: 0.6rem 0.9rem; cursor: pointer;
+  color: var(--muted); font-size: 0.95rem; border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.stat .value { font-size: 1.6rem; font-weight: 700; }
+.stat .label { color: var(--muted); font-size: 0.85rem; }
+
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 2rem 1fr; gap: 0.5rem; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.steps li::before { content: counter(step); width: 1.7rem; height: 1.7rem; border-radius: 50%; background: #e8efff; color: var(--accent); font-weight: 600; display: flex; align-items: center; justify-content: center; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; font-size: 0.82rem; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+
+.matrix td { text-align: center; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
+.matrix td.diag { background: #dcfce7; font-weight: 600; }
+.matrix td.off { background: #fee2e2; }
+
+.pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; background: #eef0f4; color: var(--muted); }
+.pill.attack { background: #fee2e2; color: var(--attack); }
+.pill.benign { background: #dcfce7; color: var(--ok); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin-bottom: 0.75rem; }
+.controls label { display: flex; flex-direction: column; font-size: 0.85rem; color: var(--muted); gap: 0.25rem; }
+select, input[type='file'] { font: inherit; padding: 0.4rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+button.primary { font: inherit; padding: 0.5rem 1rem; border: none; border-radius: 6px; background: var(--accent); color: #fff; cursor: pointer; }
+button.primary:disabled { opacity: 0.5; cursor: default; }
+
+.notice { padding: 0.7rem 0.9rem; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.92rem; margin-bottom: 1rem; }
+.error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.glossary dt { font-weight: 600; margin-top: 0.6rem; }
+.glossary dd { margin: 0 0 0.2rem 0; color: var(--muted); }
+.figures { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.figures img { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.chart { width: 100%; height: 320px; }
