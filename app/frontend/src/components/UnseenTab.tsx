@@ -1,6 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../api';
 import { ErrorBox, useLoader } from './useLoader';
+import { FamilyHoldoutCard } from './FamilyHoldoutCard';
 
 const pct = (v: number) => `${(100 * v).toFixed(1)}%`;
 
@@ -148,9 +149,10 @@ export function UnseenTab() {
         </p>
         <p className="muted">
           Held-out attacks still have close relatives in training. For example, DoS Hulk is in training when DDoS is held
-          out. Results for a whole attack family held out together would be harder and are not measured here.
+          out. Test 3 below removes whole families at once.
         </p>
       </div>
+      <FamilyHoldoutCard />
     </>
   );
 }
