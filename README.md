@@ -229,7 +229,31 @@ proba = det.predict_proba(raw_df)   # (n_rows, n_labels); columns follow det.lab
 - The default training cap (500,000 rows) keeps runtime and model size manageable. Set `max_train_rows: null` to train on the full training split.
 - Rare classes (Heartbleed, Infiltration, SQL injection) have very few rows. They can be absent from the test split, and their per-class scores are then undefined.
 - Duplicate removal is exact (all feature values and the label must match).
-- Not yet implemented, by design: UNSW-NB15, anomaly detection, SHAP, MITRE mapping, RAG and the dashboard.
+- The CIC-IDS2017 flow records carry no timestamps, host names or IP addresses. Affected asset, frequency per source and persistence are therefore not part of the risk score; each result says so.
+- The risk impact values in `configs/config.yaml` (`risk.impact`) are an analyst policy assumption, not a measurement.
+- The SVM baseline is linear (`LinearSVC`). The RBF SVM in the config is not feasible on about 500k rows.
+- The UNSW-NB15 transfer from CIC-IDS2017 does not carry over with the shared features; the UNSW-native model is evaluated separately and is in-domain only.
+
+---
+
+## 🔬 Experiments, Explanations and Reports
+
+Run from the repository root, after the CIC-IDS2017 pipeline has produced the saved models:
+
+```bash
+python -m src.run_baselines_cicids2017          # Logistic Regression and linear SVM on the same rows (writes results/metrics/cicids2017_baseline_*.json)
+python -m src.explainability.shap_explainer     # SHAP background and sample used by the reports and the dashboard
+python -m src.evaluation.figures metrics        # precision-recall, ROC, model comparison, known vs unseen, ablation figures
+python -m src.evaluation.figures shap           # SHAP summary figure
+python -m src.evaluation.figures anomaly        # autoencoder score distribution (needs torch; separate process)
+python -m src.evaluation.tracker                # results/metrics/experiments.csv: one row per model and split
+python -m src.threat_intelligence.report_generator   # grounded CTI reports (needs Ollama and the FAISS index)
+python -m pytest -q                             # unit and integration tests
+```
+
+**Risk score** (`src/threat_intelligence/risk_engine.py`): `score = Σ weight × term / Σ weight` over the terms that are available. The terms are the classifier's confidence, the impact value of the attack type, and the anomaly score when an anomaly detector ran. Every term, weight and contribution is stored with the result. Levels (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) come from `risk.levels`. Benign traffic is not rated.
+
+**Dashboard**: start the API with `uvicorn app.backend.main:app --port 8000`, then the frontend with `cd app/frontend && npm run dev` (http://localhost:3000). The *Try it* tab analyses an uploaded flow file: risk per flow, attack types with ATT&CK techniques, a SHAP explanation for any flagged flow, downloads, and an Ollama-written detection report. The *Research* tab lists every experiment and the saved figures.
 
 ---
 

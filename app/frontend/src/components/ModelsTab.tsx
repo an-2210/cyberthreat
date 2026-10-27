@@ -105,8 +105,8 @@ export function ModelsTab() {
             </table>
           </div>
           <p className="muted">
-            Low recall on a class means the model misses that attack type. Small classes (Infiltration, SQL injection,
-            Heartbleed) have very few test rows, so their scores are noisy.
+            Recall on a class is the share of that attack type the model flags. Small classes (Infiltration, SQL injection,
+            Heartbleed) have very few test rows, so their scores are less precise.
           </p>
         </div>
       )}

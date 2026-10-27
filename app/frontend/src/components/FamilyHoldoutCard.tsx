@@ -20,7 +20,7 @@ export function FamilyHoldoutCard() {
         Here the supervised model is retrained with a whole family removed, so none of its members are in training. Thresholds
         are still set on benign validation flows ({pct(data.targetFpr)} false positives). The DoS family is still
         mostly caught, probably because its flows look like other attacks in training (high volume, short flows). The
-        Patator family is mostly missed.
+        per-family rates are in the table below.
       </p>
 
       <div className="grid" style={{ marginBottom: '1rem' }}>

@@ -123,6 +123,115 @@ export interface UnseenAttacksResponse {
   nLowSample: number;
 }
 
+export interface BinaryMetrics {
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1: number;
+  fpr: number;
+  roc_auc: number;
+}
+
+export interface UnswResponse {
+  native: {
+    featureCount: number;
+    threshold: number;
+    test: BinaryMetrics;
+    confusionMatrix: ConfusionMatrix;
+    topFeatures: { feature: string; importance: number }[];
+    rows: { train_rows: number; validation_rows: number; test_rows: number };
+    leakageFlagged: string[];
+    leakageTopFeature: { feature: string; auc_separability: number };
+  };
+  ttl: {
+    variants: { key: string; label: string; featureCount: number; test: BinaryMetrics; fuzzersRecall: number }[];
+    perCategory: { category: string; support: number; all_features: number; without_ttl: number; only_ttl: number }[];
+  };
+  fuzzers: {
+    chosenOnValidation: string;
+    variants: { key: string; label: string; fuzzersRecall: number; f1: number }[];
+    seedRuns: { key: string; label: string; fuzzersRecall: { mean: number; std: number }; f1: { mean: number; std: number } }[];
+  };
+  transfer: {
+    cicInDomain: BinaryMetrics;
+    transferAtHalf: BinaryMetrics;
+    calibrated: BinaryMetrics & { threshold: number };
+    unswInDomain: BinaryMetrics & { threshold: number };
+    featureShift: { feature: string; aucCic: number; aucUnsw: number }[];
+  };
+}
+
+export interface OllamaStatus {
+  reachable: boolean;
+  model: string;
+  host: string;
+  modelInstalled: boolean;
+  message: string;
+}
+
+export interface ReportFacts {
+  rows: number;
+  flaggedAttack: number;
+  benign: number;
+  highConfidenceAttack: number;
+  borderlineAttack: number;
+  meanAttackConfidence: number | null;
+  attackTypes: { label: string; count: number; meanConfidence: number; risk: string }[];
+  flaggedWithoutType: number;
+}
+
+export interface GeneratedReport {
+  model: string;
+  headline: string;
+  summary: string;
+  findings: string[];
+  nextSteps: string[];
+  referencesUsed: string[];
+  facts: ReportFacts;
+}
+
+function withFile(file: File): FormData {
+  const form = new FormData();
+  form.append('file', file);
+  return form;
+}
+
+export interface AnalyzedRow {
+  row: number;
+  prediction: 'ATTACK' | 'BENIGN';
+  attackType: string | null;
+  confidence: number;
+  risk: string;
+  riskScore: number | null;
+}
+
+export interface AnalysisResult {
+  rowsAnalyzed: number;
+  attackRows: number;
+  benignRows: number;
+  riskCounts: Record<string, number>;
+  attackTypeCounts: Record<string, number>;
+  mitre: Record<string, { technique: string; confidence: string }[]>;
+  rows: AnalyzedRow[];
+}
+
+export interface FlowExplanation {
+  row: number;
+  prediction: 'ATTACK' | 'BENIGN';
+  attackProbability: number;
+  expected_value_log_odds: number;
+  margin_total_log_odds: number;
+  top_features: { feature: string; value: number; shap: number; direction: string }[];
+}
+
+export type ExperimentRow = Record<string, string | number | null>;
+
+async function postForm<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, { method: 'POST', body: form });
+  if (!res.ok) throw new Error(await errorText(res));
+  return res.json() as Promise<T>;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`);
   if (!res.ok) throw new Error(await errorText(res));
@@ -148,6 +257,16 @@ export const api = {
   detectors: () => getJson<DetectorsResponse>('/api/detectors'),
   unseenAttacks: () => getJson<UnseenAttacksResponse>('/api/unseen-attacks'),
   familyHoldout: () => getJson<UnseenAttacksResponse>('/api/family-holdout'),
+  unsw: () => getJson<UnswResponse>('/api/unsw'),
+  ollama: () => getJson<OllamaStatus>('/api/ollama'),
+  summarize: (file: File) => postForm<GeneratedReport>('/api/summarize', withFile(file)),
+  analyze: (file: File) => postForm<AnalysisResult>('/api/analyze', withFile(file)),
+  explain: (file: File, row: number) => {
+    const form = withFile(file);
+    form.append('row', String(row));
+    return postForm<FlowExplanation>('/api/explain', form);
+  },
+  experiments: () => getJson<ExperimentRow[]>('/api/experiments'),
   figureUrl: (name: string) => `${API_URL}/figures/${name}`,
 
   predict: async (file: File, modelKey: string): Promise<PredictionResult> => {

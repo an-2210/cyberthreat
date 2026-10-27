@@ -28,6 +28,8 @@ logger = setup_logger("shap_explainer")
 
 EXPLAIN_SAMPLE_SIZE = 2000
 EXAMPLES_PER_GROUP = 3
+BACKGROUND_FILE = "shap_background.npy"
+SAMPLE_FILE = "shap_binary_xgboost_sample.npz"
 
 
 def explain_rows(shap_values: np.ndarray, X: np.ndarray, feature_names: List[str], row_index: np.ndarray,
@@ -67,6 +69,7 @@ def run_shap(cfg, results_dir: Path = None, models_dir: Path = None, sample_size
     rng = np.random.default_rng(seed)
     bg_idx = rng.choice(len(X_train), size=int(shap_cfg.background_samples), replace=False)
     background = X_train[bg_idx]
+    np.save(results_dir / BACKGROUND_FILE, background)  # reused for single-row explanations in the reports and dashboard
     row_idx = np.sort(rng.choice(len(X_test), size=min(sample_size, len(X_test)), replace=False))
     X_s, y_s = X_test[row_idx], y_test[row_idx]
 
@@ -76,6 +79,7 @@ def run_shap(cfg, results_dir: Path = None, models_dir: Path = None, sample_size
     masker = shap.maskers.Independent(background, max_samples=len(background))
     explainer = shap.TreeExplainer(booster, data=masker, feature_perturbation="interventional")
     sv = np.asarray(explainer.shap_values(X_s, check_additivity=False))
+    np.savez_compressed(results_dir / SAMPLE_FILE, shap_values=sv, X=X_s, y=y_s, feature_names=np.array(feature_names))
     base = float(np.atleast_1d(explainer.expected_value)[0])
 
     # Additivity check: base value + sum(SHAP) must reproduce the model's margin output.
@@ -125,6 +129,27 @@ def run_shap(cfg, results_dir: Path = None, models_dir: Path = None, sample_size
     save_json(summary, results_dir / "shap_binary_xgboost_summary.json")
     logger.info(f"SHAP additivity max abs error: {additivity_max_abs_error:.2e}")
     return summary
+
+
+def build_explainer(booster: Any, background: np.ndarray) -> shap.TreeExplainer:
+    """TreeExplainer on the XGBoost booster with an explicit interventional background (all rows kept)."""
+    masker = shap.maskers.Independent(background, max_samples=len(background))
+    return shap.TreeExplainer(booster, data=masker, feature_perturbation="interventional")
+
+
+def explain_single(explainer: shap.TreeExplainer, x: np.ndarray, feature_names: List[str], top_k: int) -> Dict[str, Any]:
+    """Why one row scored as it did: its top SHAP contributions, in log-odds, signed by direction."""
+    sv = np.asarray(explainer.shap_values(np.asarray(x, dtype=np.float32).reshape(1, -1), check_additivity=False))[0]
+    order = np.argsort(np.abs(sv))[::-1][:top_k]
+    return {
+        "expected_value_log_odds": float(np.atleast_1d(explainer.expected_value)[0]),
+        "margin_total_log_odds": float(sv.sum()),
+        "top_features": [
+            {"feature": feature_names[i], "value": float(x[i]), "shap": round(float(sv[i]), 5),
+             "direction": "toward ATTACK" if sv[i] > 0 else "toward BENIGN"}
+            for i in order
+        ],
+    }
 
 
 def main(argv=None) -> None:

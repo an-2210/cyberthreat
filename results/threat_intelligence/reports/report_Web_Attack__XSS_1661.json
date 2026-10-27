@@ -1,10 +1,36 @@
 {
-  "report_id": "81737975-8466-49f3-a7ab-5a25b4ac1670",
-  "created_utc": "2026-10-27T07:05:24+00:00",
+  "report_id": "076002ed-2daf-4218-b408-f0cda6d876bc",
+  "incident_id": "INC-076002ED",
+  "created_utc": "2026-10-27T19:03:16+00:00",
   "predicted_label": "Web Attack - XSS",
   "true_label": "Web Attack - Brute Force",
   "confidence": 0.4944,
-  "severity": "medium",
+  "severity": "MEDIUM",
+  "risk": {
+    "label": "Web Attack - XSS",
+    "level": "MEDIUM",
+    "score": 0.4965,
+    "terms": [
+      {
+        "term": "supervised_confidence",
+        "value": 0.4944,
+        "weight": 0.625,
+        "contribution": 0.309
+      },
+      {
+        "term": "impact",
+        "value": 0.5,
+        "weight": 0.375,
+        "contribution": 0.1875
+      }
+    ],
+    "not_available": [
+      "affected_asset",
+      "frequency",
+      "persistence"
+    ],
+    "note": "Weights are renormalized over the terms that are available for this detection."
+  },
   "label_status": "mapped",
   "attack_description": "The detected network event is predicted to be a Web Attack - XSS with a model confidence of 0.494. This prediction is based on the exploitation of a cross-site scripting (XSS) vulnerability in a web application, which aligns with the ATT&CK techniques T1190 (Exploit Public-Facing Application) and T1189 (Drive-by Compromise). XSS attacks involve injecting malicious scripts into web pages viewed by other users, potentially allowing an attacker to execute scripts in the context of the victim's browser session.",
   "potential_impact": "The potential impact of a successful XSS attack includes unauthorized access to user sessions, theft of sensitive information, and the ability to perform actions on behalf of the victim user. This can lead to data breaches, financial loss, and reputational damage for the affected organization.",
@@ -34,22 +60,67 @@
       "url": "https://attack.mitre.org/techniques/T1189"
     }
   ],
-  "evidence": {
-    "top_class_probabilities": [
-      [
-        "Web Attack - XSS",
-        0.4943509101867676
+  "statement_basis": {
+    "observed_evidence": {
+      "source": "features of one test flow (CIC-IDS2017 MachineLearningCVE, flow level)",
+      "top_class_probabilities": [
+        [
+          "Web Attack - XSS",
+          0.4943509101867676
+        ],
+        [
+          "Web Attack - Brute Force",
+          0.26554781198501587
+        ],
+        [
+          "DoS Slowhttptest",
+          0.14102956652641296
+        ]
       ],
-      [
-        "Web Attack - Brute Force",
-        0.26554781198501587
-      ],
-      [
-        "DoS Slowhttptest",
-        0.14102956652641296
-      ]
-    ],
-    "retrieved_context": [
+      "local_explanation": {
+        "expected_value_log_odds": -6.109009008088544,
+        "margin_total_log_odds": 10.581366894741423,
+        "top_features": [
+          {
+            "feature": "Destination Port",
+            "value": 0.0,
+            "shap": 1.78089,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Average Packet Size",
+            "value": -0.4669540226459503,
+            "shap": 1.45587,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": 3.5333821773529053,
+            "shap": 1.11448,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Fwd Packet Length Max",
+            "value": -0.20000000298023224,
+            "shap": 1.0035,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Fwd Header Length",
+            "value": 0.38461539149284363,
+            "shap": 0.71718,
+            "direction": "toward ATTACK"
+          }
+        ]
+      }
+    },
+    "model_inference": {
+      "classifier": "XGBoost multiclass: predicted label and class probabilities",
+      "explanation_model": "XGBoost binary with SHAP: contributions toward ATTACK, in log-odds",
+      "predicted_label": "Web Attack - XSS",
+      "confidence": 0.4944
+    },
+    "retrieved_knowledge": [
       {
         "id": "PROFILE:Web Attack - XSS",
         "title": "CIC-IDS2017 label: Web Attack - XSS",
@@ -75,11 +146,22 @@
         "title": "T1071.001 Web Protocols",
         "score": 0.4546
       }
+    ],
+    "generated_from_retrieved_text": [
+      "attack_description",
+      "potential_impact",
+      "recommended_mitigation"
     ]
   },
   "citations": [
     "PROFILE:Web Attack - XSS",
     "ATTACK:T1189"
+  ],
+  "limitations": [
+    "Flow-level records: the CIC-IDS2017 flows used here carry no timestamps, host names or IP addresses, so the affected asset, frequency and persistence of this activity are not assessed.",
+    "Confidence is the classifier's probability for this flow. It is not the probability that an attack occurred.",
+    "No attribution is made: threat actor, malware family and IP reputation are not assessed from this data.",
+    "The attack-to-technique mapping is a project mapping of dataset labels to ATT&CK techniques, with confidence levels assigned by the project (see src/threat_intelligence/attack_mapping.py)."
   ],
   "validation": {
     "dropped_citations": [

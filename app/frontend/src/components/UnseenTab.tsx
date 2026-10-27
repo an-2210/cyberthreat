@@ -145,7 +145,7 @@ export function UnseenTab() {
           Baseline with nothing held out: supervised {pct(u.baseline.supervised)}, autoencoder {pct(u.baseline.autoencoder)},
           at {pct(u.baseline.falsePositiveRate)} false positives. Fusion chose the supervised score alone in every fold
           (weight 1.00), so it is identical to the supervised column. {u.nLowSample} attack types have fewer than 50 test
-          flows, so their rates are noisy.
+          flows, so their rates are less precise.
         </p>
         <p className="muted">
           Held-out attacks still have close relatives in training. For example, DoS Hulk is in training when DDoS is held

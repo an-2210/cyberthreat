@@ -17,7 +17,6 @@ from src.threat_intelligence.report_generator import (
     OllamaError,
     build_prompt,
     parse_llm_json,
-    severity_for,
     validate_citations,
 )
 
@@ -27,12 +26,14 @@ INDEX_DIR = ROOT / "models" / "artifacts" / "vector_store"
 CSV = ROOT / "data" / "raw" / "CICIDS2017" / "MachineLearningCVE" / "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv"
 
 
-def test_severity_uses_configured_thresholds_and_none_for_benign():
-    assert severity_for("PortScan", 0.9, THRESHOLDS) == "critical"
-    assert severity_for("PortScan", 0.72, THRESHOLDS) == "high"
-    assert severity_for("PortScan", 0.5, THRESHOLDS) == "medium"
-    assert severity_for("PortScan", 0.1, THRESHOLDS) == "low"
-    assert severity_for("BENIGN", 0.99, THRESHOLDS) == "none"
+def test_risk_level_comes_from_the_risk_engine_and_benign_is_not_rated():
+    from src.threat_intelligence.risk_engine import risk_for_detection
+    from src.utils.config import load_config
+
+    risk_cfg = load_config("configs/config.yaml").risk
+    assert risk_for_detection("DDoS", 1.0, risk_cfg)["level"] == "CRITICAL"
+    assert risk_for_detection("PortScan", 0.5, risk_cfg)["level"] == "MEDIUM"
+    assert risk_for_detection("BENIGN", 0.99, risk_cfg)["level"] == "NONE"
 
 
 def test_parse_llm_json_accepts_wrapped_objects_and_rejects_missing_fields():
@@ -89,6 +90,7 @@ def test_end_to_end_report_from_real_detection_and_real_llm():
     from src.threat_intelligence.attack_mapping import load_attack_catalog
     from src.threat_intelligence.rag import ThreatIntelIndex
     from src.threat_intelligence.report_generator import generate_report
+    from src.threat_intelligence.risk_engine import risk_for_detection
     from src.utils.config import load_config
 
     cfg = load_config(str(ROOT / "configs" / "config.yaml"))
@@ -106,10 +108,12 @@ def test_end_to_end_report_from_real_detection_and_real_llm():
     }
     index = ThreatIntelIndex.load(INDEX_DIR)
     catalog = load_attack_catalog(ROOT / "data" / "external" / "enterprise-attack.json")
-    rep = generate_report(detection, index, catalog, client, cfg.fusion.severity_thresholds, top_k=5)
+    rep = generate_report(detection, index, catalog, client, cfg.risk, top_k=5)
 
-    retrieved = {c["id"] for c in rep["evidence"]["retrieved_context"]}
+    retrieved = {c["id"] for c in rep["statement_basis"]["retrieved_knowledge"]}
     assert rep["citations"] and set(rep["citations"]) <= retrieved
     assert rep["predicted_label"] == label
-    assert rep["severity"] == severity_for(label, detection["confidence"], cfg.fusion.severity_thresholds)
+    assert rep["severity"] == risk_for_detection(label, detection["confidence"], cfg.risk)["level"]
     assert rep["attack_description"] and rep["potential_impact"] and rep["recommended_mitigation"]
+    assert rep["incident_id"].startswith("INC-") and rep["limitations"]
+    assert rep["risk"]["not_available"] and rep["risk"]["terms"]
