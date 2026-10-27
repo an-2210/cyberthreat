@@ -1,0 +1,87 @@
+{
+  "report_id": "34016cd3-8c6a-47a4-b1a3-73e4377bbf17",
+  "created_utc": "2026-10-27T07:07:07+00:00",
+  "predicted_label": "Bot",
+  "true_label": "Bot",
+  "confidence": 0.957,
+  "severity": "critical",
+  "label_status": "mapped",
+  "attack_description": "The detected network event involves a bot communicating using web protocols, specifically HTTP, to establish command and control (C2) channels. This communication mimics normal web traffic to avoid detection and blend in with legitimate traffic, embedding commands and data within HTTP packets.",
+  "potential_impact": "The potential impact includes the risk of unauthorized control over systems within the network, leading to further malicious activities such as data exfiltration, installation of additional malware, or preparation for a larger-scale attack such as a DDoS.",
+  "recommended_mitigation": [
+    "Implement and maintain network traffic monitoring and anomaly detection systems to identify unusual patterns of HTTP traffic.",
+    "Use intrusion detection systems (IDS) and intrusion prevention systems (IPS) to detect and block suspicious HTTP requests.",
+    "Apply strict access controls and monitor for unexpected outbound traffic from internal systems.",
+    "Regularly update and patch systems to mitigate vulnerabilities that could be exploited by bots.",
+    "Educate network administrators on the signs of C2 traffic and the importance of monitoring web protocols for suspicious activity."
+  ],
+  "mitre_mapping": [
+    {
+      "technique_id": "T1071.001",
+      "technique_name": "Web Protocols",
+      "tactics": [
+        "command-and-control"
+      ],
+      "confidence": "medium",
+      "url": "https://attack.mitre.org/techniques/T1071/001"
+    }
+  ],
+  "evidence": {
+    "top_class_probabilities": [
+      [
+        "Bot",
+        0.9570004940032959
+      ],
+      [
+        "BENIGN",
+        0.04291459918022156
+      ],
+      [
+        "DDoS",
+        2.4505341571057215e-05
+      ]
+    ],
+    "retrieved_context": [
+      {
+        "id": "ATTACK:T1071.001",
+        "title": "T1071.001 Web Protocols",
+        "score": 0.5992
+      },
+      {
+        "id": "ATTACK:T1498.001",
+        "title": "T1498.001 Direct Network Flood",
+        "score": 0.5842
+      },
+      {
+        "id": "PROFILE:Bot",
+        "title": "CIC-IDS2017 label: Bot",
+        "score": 0.4969
+      },
+      {
+        "id": "ATTACK:T1498",
+        "title": "T1498 Network Denial of Service",
+        "score": 0.468
+      },
+      {
+        "id": "ATTACK:T1499.002",
+        "title": "T1499.002 Service Exhaustion Flood",
+        "score": 0.4605
+      }
+    ]
+  },
+  "citations": [
+    "ATTACK:T1071.001",
+    "PROFILE:Bot"
+  ],
+  "validation": {
+    "dropped_citations": [],
+    "llm_fields_ok": true
+  },
+  "generator": {
+    "llm": "ollama:qwen2.5:14b",
+    "retrieval": "faiss IndexFlatIP, all-MiniLM-L6-v2",
+    "temperature": 0,
+    "seed": 42
+  },
+  "disclaimer": "Generated from retrieved project and ATT&CK text. Analyst review required before action."
+}

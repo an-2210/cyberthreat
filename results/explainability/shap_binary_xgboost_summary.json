@@ -1,0 +1,233 @@
+{
+  "model": "xgboost (binary)",
+  "data_source": "real CIC-IDS2017 CSVs",
+  "explainer": "shap.TreeExplainer, interventional, background from training split",
+  "n_test_rows_explained": 2000,
+  "n_background_rows": 200,
+  "expected_value_log_odds": -6.109009008088544,
+  "additivity_max_abs_error": 8.128261363538059e-06,
+  "sample_attack_rate": 0.165,
+  "sample_detection_counts": {
+    "tp": 330,
+    "fn": 0,
+    "fp": 0,
+    "tn": 1670
+  },
+  "top_features_global": [
+    {
+      "feature": "Destination Port",
+      "mean_abs_shap": 1.234590605162751
+    },
+    {
+      "feature": "Init_Win_bytes_backward",
+      "mean_abs_shap": 1.0446488642670262
+    },
+    {
+      "feature": "Bwd Packet Length Std",
+      "mean_abs_shap": 0.9967966831893424
+    },
+    {
+      "feature": "Init_Win_bytes_forward",
+      "mean_abs_shap": 0.5862083022849789
+    },
+    {
+      "feature": "Bwd Packet Length Mean",
+      "mean_abs_shap": 0.5310141619933434
+    },
+    {
+      "feature": "Fwd Packet Length Max",
+      "mean_abs_shap": 0.3748517369896193
+    },
+    {
+      "feature": "Average Packet Size",
+      "mean_abs_shap": 0.30422814334307774
+    },
+    {
+      "feature": "Total Length of Bwd Packets",
+      "mean_abs_shap": 0.29228610500093816
+    },
+    {
+      "feature": "Bwd Packet Length Min",
+      "mean_abs_shap": 0.23158043414657248
+    },
+    {
+      "feature": "Packet Length Mean",
+      "mean_abs_shap": 0.21378290889398555
+    }
+  ],
+  "examples": {
+    "true_positive_attacks": [
+      {
+        "test_row": 828,
+        "shap_margin_total": 15.280019949502876,
+        "top_features": [
+          {
+            "feature": "Bwd Packet Length Std",
+            "value": 7.649653434753418,
+            "shap": 4.893446025165321
+          },
+          {
+            "feature": "Init_Win_bytes_backward",
+            "value": 0.9957627058029175,
+            "shap": 4.1588068581218245
+          },
+          {
+            "feature": "Destination Port",
+            "value": 0.0,
+            "shap": 2.033034222888091
+          },
+          {
+            "feature": "Total Length of Bwd Packets",
+            "value": 10.528440475463867,
+            "shap": 1.0359181917079696
+          },
+          {
+            "feature": "Bwd Packet Length Mean",
+            "value": 8.563271522521973,
+            "shap": 0.6689905831937358
+          },
+          {
+            "feature": "Packet Length Std",
+            "value": 4.796359062194824,
+            "shap": 0.5079271268507182
+          },
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": 3.5333821773529053,
+            "shap": 0.4479872938216795
+          },
+          {
+            "feature": "Avg Bwd Segment Size",
+            "value": 8.563271522521973,
+            "shap": 0.22333971012514667
+          },
+          {
+            "feature": "Subflow Bwd Bytes",
+            "value": 10.528440475463867,
+            "shap": 0.17149373050939176
+          },
+          {
+            "feature": "Average Packet Size",
+            "value": 4.458743572235107,
+            "shap": 0.13119439791771584
+          }
+        ]
+      },
+      {
+        "test_row": 829,
+        "shap_margin_total": 15.18572679723615,
+        "top_features": [
+          {
+            "feature": "Bwd Packet Length Std",
+            "value": 12.811224937438965,
+            "shap": 4.6025158586882755
+          },
+          {
+            "feature": "Init_Win_bytes_backward",
+            "value": 0.9703390002250671,
+            "shap": 3.9490233929638636
+          },
+          {
+            "feature": "Destination Port",
+            "value": 0.0,
+            "shap": 1.8955074219016388
+          },
+          {
+            "feature": "Total Length of Bwd Packets",
+            "value": 10.5,
+            "shap": 1.1016104370335233
+          },
+          {
+            "feature": "Bwd Packet Length Mean",
+            "value": 10.329628944396973,
+            "shap": 0.7621995938818873
+          },
+          {
+            "feature": "Packet Length Std",
+            "value": 8.522741317749023,
+            "shap": 0.5293870123799934
+          },
+          {
+            "feature": "Fwd Packet Length Max",
+            "value": -0.10000000149011612,
+            "shap": 0.44696671640776914
+          },
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": 0.9692420363426208,
+            "shap": 0.29789103585248083
+          },
+          {
+            "feature": "Subflow Bwd Bytes",
+            "value": 10.5,
+            "shap": 0.22647506110952237
+          },
+          {
+            "feature": "Average Packet Size",
+            "value": 7.885776042938232,
+            "shap": 0.2213581014017109
+          }
+        ]
+      },
+      {
+        "test_row": 1153,
+        "shap_margin_total": 15.264879061238625,
+        "top_features": [
+          {
+            "feature": "Bwd Packet Length Std",
+            "value": 6.137932300567627,
+            "shap": 4.360826560203568
+          },
+          {
+            "feature": "Init_Win_bytes_backward",
+            "value": 0.9703390002250671,
+            "shap": 4.096385468836525
+          },
+          {
+            "feature": "Destination Port",
+            "value": 0.0,
+            "shap": 2.0007645267476617
+          },
+          {
+            "feature": "Total Length of Bwd Packets",
+            "value": 10.5,
+            "shap": 1.1386106713075423
+          },
+          {
+            "feature": "Bwd Packet Length Mean",
+            "value": 8.539351463317871,
+            "shap": 0.7870146804145043
+          },
+          {
+            "feature": "Packet Length Std",
+            "value": 4.849680423736572,
+            "shap": 0.4861222133588672
+          },
+          {
+            "feature": "Fwd Packet Length Max",
+            "value": -0.10000000149011612,
+            "shap": 0.44722570054451355
+          },
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": 0.9692420363426208,
+            "shap": 0.27201915668880244
+          },
+          {
+            "feature": "Subflow Bwd Bytes",
+            "value": 10.5,
+            "shap": 0.2289354770130012
+          },
+          {
+            "feature": "Average Packet Size",
+            "value": 6.957695007324219,
+            "shap": 0.20783583044889384
+          }
+        ]
+      }
+    ],
+    "false_negative_attacks": []
+  },
+  "figure": "/Users/anweshalaha/Desktop/cybthr/cyberthreat/results/explainability/shap_binary_xgboost_top_features.png",
+  "seed": 42
+}
