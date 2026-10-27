@@ -1,10 +1,36 @@
 {
-  "report_id": "34016cd3-8c6a-47a4-b1a3-73e4377bbf17",
-  "created_utc": "2026-10-27T07:07:07+00:00",
+  "report_id": "d82aeedf-7d86-4587-84fc-9aa2dee8c721",
+  "incident_id": "INC-D82AEEDF",
+  "created_utc": "2026-10-27T19:05:06+00:00",
   "predicted_label": "Bot",
   "true_label": "Bot",
   "confidence": 0.957,
-  "severity": "critical",
+  "severity": "CRITICAL",
+  "risk": {
+    "label": "Bot",
+    "level": "CRITICAL",
+    "score": 0.8981,
+    "terms": [
+      {
+        "term": "supervised_confidence",
+        "value": 0.957,
+        "weight": 0.625,
+        "contribution": 0.5981
+      },
+      {
+        "term": "impact",
+        "value": 0.8,
+        "weight": 0.375,
+        "contribution": 0.3
+      }
+    ],
+    "not_available": [
+      "affected_asset",
+      "frequency",
+      "persistence"
+    ],
+    "note": "Weights are renormalized over the terms that are available for this detection."
+  },
   "label_status": "mapped",
   "attack_description": "The detected network event involves a bot communicating using web protocols, specifically HTTP, to establish command and control (C2) channels. This communication mimics normal web traffic to avoid detection and blend in with legitimate traffic, embedding commands and data within HTTP packets.",
   "potential_impact": "The potential impact includes the risk of unauthorized control over systems within the network, leading to further malicious activities such as data exfiltration, installation of additional malware, or preparation for a larger-scale attack such as a DDoS.",
@@ -26,22 +52,67 @@
       "url": "https://attack.mitre.org/techniques/T1071/001"
     }
   ],
-  "evidence": {
-    "top_class_probabilities": [
-      [
-        "Bot",
-        0.9570004940032959
+  "statement_basis": {
+    "observed_evidence": {
+      "source": "features of one test flow (CIC-IDS2017 MachineLearningCVE, flow level)",
+      "top_class_probabilities": [
+        [
+          "Bot",
+          0.9570004940032959
+        ],
+        [
+          "BENIGN",
+          0.04291459918022156
+        ],
+        [
+          "DDoS",
+          2.4505341571057215e-05
+        ]
       ],
-      [
-        "BENIGN",
-        0.04291459918022156
-      ],
-      [
-        "DDoS",
-        2.4505341571057215e-05
-      ]
-    ],
-    "retrieved_context": [
+      "local_explanation": {
+        "expected_value_log_odds": -6.109009008088544,
+        "margin_total_log_odds": 7.207607162562963,
+        "top_features": [
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": -0.0017087757587432861,
+            "shap": 2.86417,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Init_Win_bytes_backward",
+            "value": 1.0847457647323608,
+            "shap": 1.28165,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Bwd Packet Length Mean",
+            "value": -0.38425925374031067,
+            "shap": 0.68407,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Fwd Packet Length Max",
+            "value": -0.17000000178813934,
+            "shap": 0.54507,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Bwd Packets/s",
+            "value": 6.638102054595947,
+            "shap": 0.48451,
+            "direction": "toward ATTACK"
+          }
+        ]
+      }
+    },
+    "model_inference": {
+      "classifier": "XGBoost multiclass: predicted label and class probabilities",
+      "explanation_model": "XGBoost binary with SHAP: contributions toward ATTACK, in log-odds",
+      "predicted_label": "Bot",
+      "confidence": 0.957
+    },
+    "retrieved_knowledge": [
       {
         "id": "ATTACK:T1071.001",
         "title": "T1071.001 Web Protocols",
@@ -67,11 +138,22 @@
         "title": "T1499.002 Service Exhaustion Flood",
         "score": 0.4605
       }
+    ],
+    "generated_from_retrieved_text": [
+      "attack_description",
+      "potential_impact",
+      "recommended_mitigation"
     ]
   },
   "citations": [
     "ATTACK:T1071.001",
     "PROFILE:Bot"
+  ],
+  "limitations": [
+    "Flow-level records: the CIC-IDS2017 flows used here carry no timestamps, host names or IP addresses, so the affected asset, frequency and persistence of this activity are not assessed.",
+    "Confidence is the classifier's probability for this flow. It is not the probability that an attack occurred.",
+    "No attribution is made: threat actor, malware family and IP reputation are not assessed from this data.",
+    "The attack-to-technique mapping is a project mapping of dataset labels to ATT&CK techniques, with confidence levels assigned by the project (see src/threat_intelligence/attack_mapping.py)."
   ],
   "validation": {
     "dropped_citations": [],

@@ -15,12 +15,15 @@ export function UnswTab() {
   const n = u.native;
 
   const comparison: { label: string; m: BinaryMetrics; note: string }[] = [
-    { label: 'CIC-trained, transferred to UNSW (calibrated threshold)', m: t.calibrated, note: 'Fails: it flags almost no UNSW attacks.' },
+    { label: 'CIC-trained, transferred to UNSW (calibrated threshold)', m: t.calibrated, note: `Flags ${pct(t.calibrated.recall)} of UNSW attacks.` },
     { label: 'UNSW-trained, 9 shared features', m: t.unswInDomain, note: 'Same nine features as the transfer test.' },
     { label: `UNSW-trained, all ${n.featureCount} features`, m: n.test, note: 'Headline result for UNSW-NB15.' },
   ];
 
   const shiftChart = t.featureShift.map((r) => ({ name: r.feature, cic: r.aucCic, unsw: r.aucUnsw }));
+
+  const fuzzersRow = u.ttl.perCategory.find((c) => c.category === 'Fuzzers');
+  const fuzzersNotFlagged = fuzzersRow ? Math.round(fuzzersRow.support * (1 - fuzzersRow.all_features)) : null;
 
   const fuzzChart = [
     ...u.fuzzers.variants.map((v) => ({ name: v.label, recall: v.fuzzersRecall })),
@@ -39,8 +42,9 @@ export function UnswTab() {
           on its own features? Both use a 1% benign false-positive budget, with thresholds chosen on training data only.
         </p>
         <p>
-          <strong>Short answer:</strong> the transfer fails. A detector trained on UNSW-NB15 itself reaches an F1 of{' '}
-          {num(n.test.f1)}, but that result is in-domain and should not be read as proof it generalizes.
+          <strong>Short answer:</strong> the CIC-trained model does not carry over to UNSW-NB15 as it stands. A detector trained
+          on UNSW-NB15 itself reaches an F1 of {num(n.test.f1)}. That is an in-domain result, so it shows performance on this
+          dataset, not generalization to other networks.
         </p>
       </div>
 
@@ -97,12 +101,12 @@ export function UnswTab() {
         <p className="muted">
           The CIC-trained model reached F1 {num(t.cicInDomain.f1)} on its own CIC test split. Its precision on UNSW is{' '}
           {num(t.calibrated.precision)}, but recall is {pct(t.calibrated.recall)}: the threshold moves the decision point, not
-          the ranking, and the ranking itself is weak (ROC-AUC {num(t.calibrated.roc_auc)}).
+          the ranking, and the ranking is moderate (ROC-AUC {num(t.calibrated.roc_auc)}).
         </p>
       </div>
 
       <div className="card">
-        <h3>Why the transfer fails: the features point in different directions</h3>
+        <h3>Why the transfer differs: the features point in opposite directions</h3>
         <p>
           For each shared feature, the chart shows how well it separates attacks from benign flows on each dataset (ROC-AUC).
           0.5 means no separation. Below 0.5 means the direction is reversed: a feature that marks attacks as large on CIC-IDS2017
@@ -178,7 +182,7 @@ export function UnswTab() {
         <p>
           Recall per UNSW-NB15 attack category on the test file, for each feature set. These rates are not a single accuracy
           number: categories with few test flows (Worms has {u.ttl.perCategory.find((c) => c.category === 'Worms')?.support ?? '—'})
-          are noisy.
+          are less precise.
         </p>
         <div className="table-wrap">
           <table>
@@ -196,7 +200,7 @@ export function UnswTab() {
                 <tr key={c.category}>
                   <td>
                     {c.category}{' '}
-                    {c.category === 'Fuzzers' && <span className="pill">weakest</span>}
+                    {c.category === 'Fuzzers' && <span className="pill">focus</span>}
                     {c.support < 100 && <span className="pill">low sample</span>}
                   </td>
                   <td className="num">{c.support.toLocaleString()}</td>
@@ -240,18 +244,19 @@ export function UnswTab() {
           </table>
         </div>
         <p className="muted">
-          {n.confusionMatrix.matrix[0][1].toLocaleString()} benign flows were flagged ({pct(n.test.fpr)} of benign). Missed attacks:{' '}
-          {n.confusionMatrix.matrix[1][0].toLocaleString()} of {(n.confusionMatrix.matrix[1][0] + n.confusionMatrix.matrix[1][1]).toLocaleString()}.
-          Most misses are Fuzzers flows.
+          {n.confusionMatrix.matrix[0][1].toLocaleString()} benign flows were flagged ({pct(n.test.fpr)} of benign). Attacks not
+          flagged: {n.confusionMatrix.matrix[1][0].toLocaleString()} of{' '}
+          {(n.confusionMatrix.matrix[1][0] + n.confusionMatrix.matrix[1][1]).toLocaleString()}
+          {fuzzersNotFlagged !== null && <>, of which {fuzzersNotFlagged.toLocaleString()} are Fuzzers flows</>}.
         </p>
       </div>
 
       <div className="card">
-        <h3>Fuzzers: the weakest category</h3>
+        <h3>Fuzzers: detection and the alternatives tested</h3>
         <p>
-          Fuzzers are detected about half the time. Two approaches were tried. A multiclass model did not improve on the binary
-          headline model. Per-flow ratio features did not change the result across three seeds. The chart shows recall on the
-          test file for each variant; the selection rule for each was fixed on validation data.
+          Fuzzers are detected about half the time. Two alternatives were tested: a multiclass model, and per-flow ratio features
+          checked across three seeds. Neither changed the rate, so the headline model is kept. The chart shows recall on the test
+          file for each variant; the selection rule for each was fixed on validation data.
         </p>
         <div className="chart" style={{ height: 260 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -265,10 +270,10 @@ export function UnswTab() {
           </ResponsiveContainer>
         </div>
         <p className="muted">
-          Chosen on validation: {u.fuzzers.chosenOnValidation.replace('_', ' ')}. Its test Fuzzers recall is lower than the
-          headline model's, so the headline model stays. A diagnostic run (not saved in the results) found that Fuzzers flows sit
-          in the same score range as the top few percent of benign traffic, which is why thresholds and features alone have not
-          closed the gap.
+          Fuzzers recall on the test file: headline model {pct(u.fuzzers.variants[0].fuzzersRecall)}, multiclass{' '}
+          {pct(u.fuzzers.variants[1].fuzzersRecall)}. The headline model is kept. A diagnostic run (not saved in the results)
+          found that Fuzzers flows score in the same range as the top few percent of benign traffic, so a single threshold has
+          to trade detection against false alarms.
         </p>
       </div>
 

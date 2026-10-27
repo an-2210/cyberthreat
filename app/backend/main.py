@@ -19,12 +19,14 @@ Endpoints (all JSON, all under /api):
 
 import io
 import json
+import re
 import sys
 import time
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +37,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.models.inference import CICIDS2017Detector, MODEL_NAMES, TASKS  # noqa: E402
+from src.threat_intelligence.report_generator import OllamaClient, OllamaError  # noqa: E402
+from src.threat_intelligence.risk_engine import risk_for_detection  # noqa: E402
+from src.threat_intelligence.attack_mapping import LABEL_TO_TECHNIQUES  # noqa: E402
+from src.explainability.shap_explainer import BACKGROUND_FILE, build_explainer, explain_single  # noqa: E402
+from src.utils.config import load_config  # noqa: E402
 
 RESULTS = REPO_ROOT / "results"
 RUN_SUMMARY = RESULTS / "reports" / "cicids2017_run_summary.json"
@@ -46,6 +53,7 @@ METRICS = RESULTS / "metrics"
 ARTIFACTS = REPO_ROOT / "models" / "artifacts"
 
 BENIGN = "BENIGN"
+ATTACK = "ATTACK"
 MAX_PREDICTION_ROWS = 1000  # per-row results returned to the browser; counts always cover the whole file
 
 app = FastAPI(title="CyberThreat dashboard API", version="2.0.0")
@@ -427,3 +435,238 @@ def unsw() -> Dict[str, Any]:
             ],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# threat-intelligence reports and the local LLM (Ollama)
+# ---------------------------------------------------------------------------
+
+REPORTS = RESULTS / "threat_intelligence" / "reports"
+CFG = load_config(REPO_ROOT / "configs" / "config.yaml")
+LLM = CFG.llm
+
+
+def _ollama() -> OllamaClient:
+    return OllamaClient(model=LLM.ollama_model, host=LLM.ollama_host, timeout=float(LLM.timeout_seconds))
+
+
+@app.get("/api/ollama")
+def ollama_status() -> Dict[str, Any]:
+    """Is the local Ollama server up, and is the configured model installed?"""
+    try:
+        installed = _ollama().available_models()
+    except OllamaError as exc:
+        return {"reachable": False, "model": LLM.ollama_model, "host": LLM.ollama_host, "modelInstalled": False, "message": str(exc)}
+    return {"reachable": True, "model": LLM.ollama_model, "host": LLM.ollama_host,
+            "modelInstalled": LLM.ollama_model in installed, "message": ""}
+
+
+def _saved_reports_for(labels: List[str]) -> List[Dict[str, Any]]:
+    """Saved threat-intelligence reports (written earlier by the report generator) for the labels that were detected."""
+    if not REPORTS.exists():
+        return []
+    wanted = set(labels)
+    return [r for r in (json.loads(p.read_text(encoding="utf-8")) for p in sorted(REPORTS.glob("report_*.json")))
+            if r.get("predicted_label") in wanted]
+
+
+REPORT_SYSTEM = (
+    "You write a detection report for a security operations analyst. You are given facts computed from one batch of network "
+    "flows: how many were flagged as attacks, which attack types a second model assigned to them, the model's confidence, "
+    "and reference text for those attack types. Explain what the facts mean and what the analyst should do next. Be specific: "
+    "name the attack types and counts, say how confident the model was, and tie each next step to an attack type or to the "
+    "borderline flows. Use only the facts and reference text given. Do not invent IP addresses, ports, timings or specific "
+    "flows. The model output has no ground-truth labels, so never say whether predictions are correct or mention accuracy, "
+    "precision, recall or false positives. Do not repeat the same number in more than one finding. "
+    "Reply with JSON: {\"headline\": one sentence, \"summary\": two or three sentences, "
+    "\"findings\": 2 to 3 short strings, \"next_steps\": 2 to 3 short strings}."
+)
+HIGH_CONFIDENCE = 0.9
+BORDERLINE = 0.7
+
+
+def _report_facts(raw: pd.DataFrame) -> Dict[str, Any]:
+    """Computed facts about one batch: the binary detector finds attacks, the multiclass detector names their types."""
+    binary = _load_detector("binary", "xgboost")
+    multi = _load_detector("multiclass", "xgboost")
+    labels = np.asarray(binary.predict(raw))
+    attack_idx = list(binary.labels).index(ATTACK)
+    attack_conf = binary.predict_proba(raw)[:, attack_idx]
+    flagged = labels == ATTACK
+    types = np.asarray(multi.predict(raw))
+
+    breakdown = []
+    for name in sorted(set(types[flagged]) - {BENIGN}):
+        m = flagged & (types == name)
+        mean_conf = round(float(attack_conf[m].mean()), 3)
+        breakdown.append({"label": str(name), "count": int(m.sum()), "meanConfidence": mean_conf,
+                          "risk": risk_for_detection(str(name), mean_conf, CFG.risk)["level"]})
+    breakdown.sort(key=lambda d: -d["count"])
+    return {
+        "rows": int(len(labels)),
+        "flaggedAttack": int(flagged.sum()),
+        "benign": int((~flagged).sum()),
+        "highConfidenceAttack": int((flagged & (attack_conf >= HIGH_CONFIDENCE)).sum()),
+        "borderlineAttack": int((flagged & (attack_conf < BORDERLINE)).sum()),
+        "meanAttackConfidence": round(float(attack_conf[flagged].mean()), 3) if flagged.any() else None,
+        "attackTypes": breakdown,
+        "flaggedWithoutType": int((flagged & (types == BENIGN)).sum()),
+    }
+
+
+@app.post("/api/summarize")
+async def summarize(file: UploadFile = File(...)) -> Dict[str, Any]:
+    """Detection report for one uploaded file. Facts are computed from the file; the local LLM only writes the text."""
+    content = await file.read()
+    try:
+        raw = pd.read_csv(io.BytesIO(content))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not read the file as CSV: {exc}")
+    raw.columns = raw.columns.str.strip()
+    if raw.empty:
+        raise HTTPException(status_code=400, detail="The CSV has no rows.")
+    try:
+        facts = _report_facts(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    references = [
+        {"label": r["predicted_label"], "description": r["attack_description"], "impact": r["potential_impact"],
+         "mitigations": r["recommended_mitigation"][:3], "techniques": [t["technique_id"] for t in r["mitre_mapping"]]}
+        for r in _saved_reports_for([t["label"] for t in facts["attackTypes"]])
+    ]
+    user = json.dumps({"facts": facts, "reference_descriptions": references}, indent=1)
+    try:
+        raw_reply = _ollama().chat_json(REPORT_SYSTEM, user)
+    except OllamaError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    try:
+        parsed = json.loads(raw_reply)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=502, detail="The model did not return valid JSON. Try again.")
+
+    # The counts carry no ground truth, so any line that claims correctness is dropped rather than shown.
+    unsupported = re.compile(r"actual|accura|false positive|true positive|correct|discrepan|precision|recall", re.IGNORECASE)
+
+    def keep(lines: Any) -> List[str]:
+        return [s for s in (str(x) for x in lines or []) if not unsupported.search(s)][:3]
+
+    summary = str(parsed.get("summary", ""))
+    return {
+        "model": LLM.ollama_model,
+        "headline": str(parsed.get("headline", "")),
+        "summary": "" if unsupported.search(summary) else summary,
+        "findings": keep(parsed.get("findings")),
+        "nextSteps": keep(parsed.get("next_steps")),
+        "referencesUsed": [r["label"] for r in references],
+        "facts": facts,
+    }
+
+
+# ---------------------------------------------------------------------------
+# per-flow analysis and single-flow explanations for the dashboard
+# ---------------------------------------------------------------------------
+
+MAX_ANALYSIS_ROWS = 20000
+
+
+async def _read_upload(file: UploadFile) -> pd.DataFrame:
+    content = await file.read()
+    try:
+        raw = pd.read_csv(io.BytesIO(content))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not read the file as CSV: {exc}")
+    raw.columns = raw.columns.str.strip()
+    if raw.empty:
+        raise HTTPException(status_code=400, detail="The CSV has no rows.")
+    return raw
+
+
+@lru_cache(maxsize=1)
+def _explainer():
+    """SHAP explainer for the binary XGBoost detector, built once from the saved background sample."""
+    background_path = RESULTS / "explainability" / BACKGROUND_FILE
+    if not background_path.exists():
+        raise HTTPException(status_code=503, detail="The SHAP background is missing. Run python -m src.explainability.shap_explainer first.")
+    det = _load_detector("binary", "xgboost")
+    names = list(det.pipeline.feature_names_out_)
+    return build_explainer(det.model.model.get_booster(), np.load(background_path)), names
+
+
+@app.post("/api/analyze")
+async def analyze(file: UploadFile = File(...)) -> Dict[str, Any]:
+    """Every flow in the file: attack or benign, the attack type for flagged flows, and a transparent risk level."""
+    raw = await _read_upload(file)
+    if len(raw) > MAX_ANALYSIS_ROWS:
+        raise HTTPException(status_code=400, detail=f"Upload at most {MAX_ANALYSIS_ROWS} rows at a time.")
+    try:
+        binary = _load_detector("binary", "xgboost")
+        multi = _load_detector("multiclass", "xgboost")
+        flagged = np.asarray(binary.predict(raw)) == ATTACK
+        attack_conf = binary.predict_proba(raw)[:, list(binary.labels).index(ATTACK)]
+        types = np.asarray(multi.predict(raw))
+        type_conf = multi.predict_proba(raw).max(axis=1)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    rows: List[Dict[str, Any]] = []
+    for i in range(len(raw)):
+        if not flagged[i]:
+            rows.append({"row": i + 1, "prediction": BENIGN, "attackType": None, "confidence": round(float(attack_conf[i]), 4),
+                         "risk": "NONE", "riskScore": 0.0})
+            continue
+        attack_type = str(types[i]) if types[i] != BENIGN else None
+        if attack_type is None:
+            # flagged by the binary model, but the multiclass model did not name an attack type: not rated
+            rows.append({"row": i + 1, "prediction": ATTACK, "attackType": None, "confidence": round(float(attack_conf[i]), 4),
+                         "risk": "UNRATED", "riskScore": None})
+            continue
+        risk = risk_for_detection(attack_type, float(type_conf[i]), CFG.risk)
+        rows.append({"row": i + 1, "prediction": ATTACK, "attackType": attack_type,
+                     "confidence": round(float(attack_conf[i]), 4), "risk": risk["level"], "riskScore": risk["score"]})
+
+    levels = pd.Series([r["risk"] for r in rows]).value_counts().to_dict()
+    types_count = pd.Series([r["attackType"] for r in rows if r["attackType"]]).value_counts().to_dict()
+    return {
+        "rowsAnalyzed": len(rows),
+        "attackRows": int(flagged.sum()),
+        "benignRows": int((~flagged).sum()),
+        "riskCounts": {str(k): int(v) for k, v in levels.items()},
+        "attackTypeCounts": {str(k): int(v) for k, v in types_count.items()},
+        "mitre": {
+            name: [{"technique": t, "confidence": c} for t, c, _ in LABEL_TO_TECHNIQUES.get(name, [])]
+            for name in types_count
+        },
+        "rows": rows,
+    }
+
+
+@app.post("/api/explain")
+async def explain(file: UploadFile = File(...), row: int = Form(...)) -> Dict[str, Any]:
+    """Why one flow (1-based row number in the upload) was or was not flagged: SHAP contributions of the binary model."""
+    raw = await _read_upload(file)
+    if row < 1 or row > len(raw):
+        raise HTTPException(status_code=400, detail=f"Row must be between 1 and {len(raw)}.")
+    explainer, names = _explainer()
+    det = _load_detector("binary", "xgboost")
+    one = raw.iloc[[row - 1]]
+    try:
+        x = det.pipeline.transform_new_data(one[det.input_columns]).to_numpy(dtype=np.float32)[0]
+        p_attack = float(det.predict_proba(one)[0, list(det.labels).index(ATTACK)])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    out = explain_single(explainer, x, names, top_k=10)
+    return {"row": row, "prediction": ATTACK if p_attack >= 0.5 else BENIGN, "attackProbability": round(p_attack, 4), **out}
+
+
+@app.get("/api/experiments")
+def experiments() -> List[Dict[str, Any]]:
+    """Every saved experiment, one row per model and split (written by src.evaluation.tracker)."""
+    path = METRICS / "experiments.csv"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="experiments.csv is missing. Run python -m src.evaluation.tracker first.")
+    df = pd.read_csv(path)
+    return df.where(pd.notna(df), None).to_dict(orient="records")
+

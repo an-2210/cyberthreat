@@ -1,10 +1,36 @@
 {
-  "report_id": "40f8ea86-e4bf-4201-8dbf-0d589137879c",
-  "created_utc": "2026-10-27T06:36:54+00:00",
+  "report_id": "02ace170-d19e-44b2-8bb6-8b989ab19183",
+  "incident_id": "INC-02ACE170",
+  "created_utc": "2026-10-27T18:59:57+00:00",
   "predicted_label": "PortScan",
   "true_label": "PortScan",
   "confidence": 0.9998,
-  "severity": "critical",
+  "severity": "HIGH",
+  "risk": {
+    "label": "PortScan",
+    "level": "HIGH",
+    "score": 0.7374,
+    "terms": [
+      {
+        "term": "supervised_confidence",
+        "value": 0.9998,
+        "weight": 0.625,
+        "contribution": 0.6249
+      },
+      {
+        "term": "impact",
+        "value": 0.3,
+        "weight": 0.375,
+        "contribution": 0.1125
+      }
+    ],
+    "not_available": [
+      "affected_asset",
+      "frequency",
+      "persistence"
+    ],
+    "note": "Weights are renormalized over the terms that are available for this detection."
+  },
   "label_status": "mapped",
   "attack_description": "The detected network event is a port scan, which is a method of probing a network to discover which network services (listening ports) are available on a host. This activity is categorized under the MITRE ATT&CK framework as T1046 Network Service Discovery, with high confidence that this is an attempt to gather information about the network's services and potential vulnerabilities.",
   "potential_impact": "The potential impact of a port scan includes the discovery of open ports and services that could be exploited for further attacks, such as gaining unauthorized access or deploying malware. While a port scan itself does not cause direct damage, it is often a precursor to more harmful activities.",
@@ -26,22 +52,67 @@
       "url": "https://attack.mitre.org/techniques/T1046"
     }
   ],
-  "evidence": {
-    "top_class_probabilities": [
-      [
-        "PortScan",
-        0.9998272061347961
+  "statement_basis": {
+    "observed_evidence": {
+      "source": "features of one test flow (CIC-IDS2017 MachineLearningCVE, flow level)",
+      "top_class_probabilities": [
+        [
+          "PortScan",
+          0.9998272061347961
+        ],
+        [
+          "BENIGN",
+          0.00013803469482809305
+        ],
+        [
+          "DoS Hulk",
+          1.4266277503338642e-05
+        ]
       ],
-      [
-        "BENIGN",
-        0.00013803469482809305
-      ],
-      [
-        "DoS Hulk",
-        1.4266277503338642e-05
-      ]
-    ],
-    "retrieved_context": [
+      "local_explanation": {
+        "expected_value_log_odds": -6.109009008088544,
+        "margin_total_log_odds": 13.527309546828219,
+        "top_features": [
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": 3.5333821773529053,
+            "shap": 1.79201,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Average Packet Size",
+            "value": -0.4497126340866089,
+            "shap": 1.69033,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Fwd Packet Length Max",
+            "value": -0.20000000298023224,
+            "shap": 1.16044,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "min_seg_size_forward",
+            "value": 1.6666666269302368,
+            "shap": 1.0841,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Bwd Packet Length Mean",
+            "value": -0.38425925374031067,
+            "shap": 0.96208,
+            "direction": "toward ATTACK"
+          }
+        ]
+      }
+    },
+    "model_inference": {
+      "classifier": "XGBoost multiclass: predicted label and class probabilities",
+      "explanation_model": "XGBoost binary with SHAP: contributions toward ATTACK, in log-odds",
+      "predicted_label": "PortScan",
+      "confidence": 0.9998
+    },
+    "retrieved_knowledge": [
       {
         "id": "PROFILE:PortScan",
         "title": "CIC-IDS2017 label: PortScan",
@@ -67,11 +138,22 @@
         "title": "CIC-IDS2017 label: BENIGN",
         "score": 0.3763
       }
+    ],
+    "generated_from_retrieved_text": [
+      "attack_description",
+      "potential_impact",
+      "recommended_mitigation"
     ]
   },
   "citations": [
     "PROFILE:PortScan",
     "ATTACK:T1046"
+  ],
+  "limitations": [
+    "Flow-level records: the CIC-IDS2017 flows used here carry no timestamps, host names or IP addresses, so the affected asset, frequency and persistence of this activity are not assessed.",
+    "Confidence is the classifier's probability for this flow. It is not the probability that an attack occurred.",
+    "No attribution is made: threat actor, malware family and IP reputation are not assessed from this data.",
+    "The attack-to-technique mapping is a project mapping of dataset labels to ATT&CK techniques, with confidence levels assigned by the project (see src/threat_intelligence/attack_mapping.py)."
   ],
   "validation": {
     "dropped_citations": [],

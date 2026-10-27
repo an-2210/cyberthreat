@@ -1,10 +1,36 @@
 {
-  "report_id": "92f7d7a4-3402-4341-98df-3c47c4499faf",
-  "created_utc": "2026-10-27T07:03:18+00:00",
+  "report_id": "f541537e-8a72-417b-a684-4388391039f9",
+  "incident_id": "INC-F541537E",
+  "created_utc": "2026-10-27T19:01:21+00:00",
   "predicted_label": "DDoS",
   "true_label": "DDoS",
   "confidence": 0.9998,
-  "severity": "critical",
+  "severity": "CRITICAL",
+  "risk": {
+    "label": "DDoS",
+    "level": "CRITICAL",
+    "score": 0.9249,
+    "terms": [
+      {
+        "term": "supervised_confidence",
+        "value": 0.9998,
+        "weight": 0.625,
+        "contribution": 0.6249
+      },
+      {
+        "term": "impact",
+        "value": 0.8,
+        "weight": 0.375,
+        "contribution": 0.3
+      }
+    ],
+    "not_available": [
+      "affected_asset",
+      "frequency",
+      "persistence"
+    ],
+    "note": "Weights are renormalized over the terms that are available for this detection."
+  },
   "label_status": "mapped",
   "attack_description": "The detected network event involves a Direct Network Flood (T1498.001) attack, where a high volume of network traffic is sent to a target to cause a denial of service (DoS). This attack aims to reduce the availability and functionality of the targeted system(s) and network by overwhelming it with traffic, often using botnets to generate the flood from multiple systems spread across the internet.",
   "potential_impact": "The potential impact of this attack includes degraded or blocked availability of targeted resources such as websites, email services, DNS, and web-based applications. The network bandwidth capacity can be exhausted, leading to service unavailability for legitimate users. In severe cases, the attack can saturate the target network, making it difficult to distinguish between malicious traffic and legitimate client requests.",
@@ -25,22 +51,67 @@
       "url": "https://attack.mitre.org/techniques/T1498/001"
     }
   ],
-  "evidence": {
-    "top_class_probabilities": [
-      [
-        "DDoS",
-        0.9997712969779968
+  "statement_basis": {
+    "observed_evidence": {
+      "source": "features of one test flow (CIC-IDS2017 MachineLearningCVE, flow level)",
+      "top_class_probabilities": [
+        [
+          "DDoS",
+          0.9997712969779968
+        ],
+        [
+          "BENIGN",
+          0.00019248647731728852
+        ],
+        [
+          "DoS Hulk",
+          1.9614099073805846e-05
+        ]
       ],
-      [
-        "BENIGN",
-        0.00019248647731728852
-      ],
-      [
-        "DoS Hulk",
-        1.9614099073805846e-05
-      ]
-    ],
-    "retrieved_context": [
+      "local_explanation": {
+        "expected_value_log_odds": -6.109009008088544,
+        "margin_total_log_odds": 13.539967391473585,
+        "top_features": [
+          {
+            "feature": "Average Packet Size",
+            "value": -0.42385056614875793,
+            "shap": 2.31949,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Destination Port",
+            "value": 0.0,
+            "shap": 2.2678,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Init_Win_bytes_forward",
+            "value": 0.0006102770566940308,
+            "shap": 1.70379,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "fe_packet_ratio",
+            "value": 799986.0,
+            "shap": 1.15823,
+            "direction": "toward ATTACK"
+          },
+          {
+            "feature": "Fwd Packet Length Max",
+            "value": -0.17000000178813934,
+            "shap": 1.08854,
+            "direction": "toward ATTACK"
+          }
+        ]
+      }
+    },
+    "model_inference": {
+      "classifier": "XGBoost multiclass: predicted label and class probabilities",
+      "explanation_model": "XGBoost binary with SHAP: contributions toward ATTACK, in log-odds",
+      "predicted_label": "DDoS",
+      "confidence": 0.9998
+    },
+    "retrieved_knowledge": [
       {
         "id": "ATTACK:T1498.001",
         "title": "T1498.001 Direct Network Flood",
@@ -66,11 +137,22 @@
         "title": "T1499 Endpoint Denial of Service",
         "score": 0.4929
       }
+    ],
+    "generated_from_retrieved_text": [
+      "attack_description",
+      "potential_impact",
+      "recommended_mitigation"
     ]
   },
   "citations": [
     "ATTACK:T1498.001",
     "PROFILE:DDoS"
+  ],
+  "limitations": [
+    "Flow-level records: the CIC-IDS2017 flows used here carry no timestamps, host names or IP addresses, so the affected asset, frequency and persistence of this activity are not assessed.",
+    "Confidence is the classifier's probability for this flow. It is not the probability that an attack occurred.",
+    "No attribution is made: threat actor, malware family and IP reputation are not assessed from this data.",
+    "The attack-to-technique mapping is a project mapping of dataset labels to ATT&CK techniques, with confidence levels assigned by the project (see src/threat_intelligence/attack_mapping.py)."
   ],
   "validation": {
     "dropped_citations": [],

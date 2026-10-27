@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 from src.threat_intelligence.attack_mapping import label_status, load_attack_catalog, techniques_for_label
 from src.threat_intelligence.rag import ThreatIntelIndex
+from src.threat_intelligence.risk_engine import risk_for_detection
 from src.utils.config import get_absolute_path, load_config
 from src.utils.io_utils import save_json
 from src.utils.logging import setup_logger
@@ -83,16 +84,6 @@ SYSTEM_PROMPT = (
 )
 
 
-def severity_for(label: str, confidence: float, thresholds: Dict[str, float]) -> str:
-    """Severity from detection confidence using the configured thresholds (fusion.severity_thresholds)."""
-    if label == "BENIGN":
-        return "none"
-    for level in ("critical", "high", "medium", "low"):
-        if confidence >= float(thresholds[level]):
-            return level
-    return "low"
-
-
 def build_prompt(detection: Dict[str, Any], hits: Sequence[Dict[str, Any]], techniques: List[Dict[str, Any]]) -> str:
     context = "\n\n".join(f"[{h['id']}] {h['title']}\n{h['text']}" for h in hits)
     tech_lines = "\n".join(f"- {t['technique_id']} {t['technique_name']} (tactics: {', '.join(t['tactics'])}; confidence {t['confidence']})"
@@ -133,16 +124,38 @@ def validate_citations(citations: List[str], retrieved_ids: Sequence[str]) -> Di
     return {"valid": valid, "dropped": dropped}
 
 
+def limitations_for(status: str, has_explanation: bool) -> List[str]:
+    """Limitations stated in every report. Written by code, not by the LLM."""
+    items = [
+        "Flow-level records: the CIC-IDS2017 flows used here carry no timestamps, host names or IP addresses, so the "
+        "affected asset, frequency and persistence of this activity are not assessed.",
+        "Confidence is the classifier's probability for this flow. It is not the probability that an attack occurred.",
+        "No attribution is made: threat actor, malware family and IP reputation are not assessed from this data.",
+        "The attack-to-technique mapping is a project mapping of dataset labels to ATT&CK techniques, with confidence "
+        "levels assigned by the project (see src/threat_intelligence/attack_mapping.py).",
+    ]
+    if status != "mapped":
+        items.append("Insufficient evidence to assign a single ATT&CK technique to this label.")
+    if not has_explanation:
+        items.append("No local SHAP explanation was computed for this flow.")
+    return items
+
+
 def generate_report(
     detection: Dict[str, Any],
     index: ThreatIntelIndex,
     catalog: Dict[str, Any],
     client: OllamaClient,
-    thresholds: Dict[str, float],
+    risk_cfg: Any,
     top_k: int = 5,
 ) -> Dict[str, Any]:
-    """Builds one grounded report for a detection. Raises if the LLM output cannot be grounded."""
+    """Builds one grounded report for a detection. Raises if the LLM output cannot be grounded.
+
+    The risk level comes from src/threat_intelligence/risk_engine.py (every term is stored in the report). The LLM
+    writes only the description, impact and mitigations, from the retrieved text it is given.
+    """
     label = detection["predicted_label"]
+    confidence = float(detection["confidence"])
     techniques = techniques_for_label(label, catalog)
     query = f"{label} network attack. " + " ".join(t["technique_name"] for t in techniques)
     hits = index.search(query, k=top_k)
@@ -156,14 +169,20 @@ def generate_report(
     if cites["dropped"]:
         logger.warning(f"Dropped citations not in retrieved context: {cites['dropped']}")
 
+    risk = risk_for_detection(label, confidence, risk_cfg)
+    report_id = str(uuid.uuid4())
+    status = label_status(label)
+    explanation = detection.get("explanation")
     return {
-        "report_id": str(uuid.uuid4()),
+        "report_id": report_id,
+        "incident_id": f"INC-{report_id[:8].upper()}",
         "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
         "predicted_label": label,
         "true_label": detection.get("true_label"),
-        "confidence": round(float(detection["confidence"]), 4),
-        "severity": severity_for(label, float(detection["confidence"]), thresholds),
-        "label_status": label_status(label),
+        "confidence": round(confidence, 4),
+        "severity": risk["level"],
+        "risk": risk,
+        "label_status": status,
         "attack_description": str(llm["attack_description"]).strip(),
         "potential_impact": str(llm["potential_impact"]).strip(),
         "recommended_mitigation": [str(m).strip() for m in llm["recommended_mitigation"]],
@@ -171,11 +190,23 @@ def generate_report(
             {"technique_id": t["technique_id"], "technique_name": t["technique_name"], "tactics": t["tactics"],
              "confidence": t["confidence"], "url": t["url"]} for t in techniques
         ],
-        "evidence": {
-            "top_class_probabilities": detection["top_class_probabilities"],
-            "retrieved_context": [{"id": h["id"], "title": h["title"], "score": h["score"]} for h in hits],
+        "statement_basis": {
+            "observed_evidence": {
+                "source": "features of one test flow (CIC-IDS2017 MachineLearningCVE, flow level)",
+                "top_class_probabilities": detection["top_class_probabilities"],
+                "local_explanation": explanation,
+            },
+            "model_inference": {
+                "classifier": "XGBoost multiclass: predicted label and class probabilities",
+                "explanation_model": "XGBoost binary with SHAP: contributions toward ATTACK, in log-odds",
+                "predicted_label": label,
+                "confidence": round(confidence, 4),
+            },
+            "retrieved_knowledge": [{"id": h["id"], "title": h["title"], "score": h["score"]} for h in hits],
+            "generated_from_retrieved_text": ["attack_description", "potential_impact", "recommended_mitigation"],
         },
         "citations": cites["valid"],
+        "limitations": limitations_for(status, explanation is not None),
         "validation": {"dropped_citations": cites["dropped"], "llm_fields_ok": True},
         "generator": {"llm": f"ollama:{client.model}", "retrieval": "faiss IndexFlatIP, all-MiniLM-L6-v2",
                       "temperature": 0, "seed": client.seed},
@@ -227,12 +258,26 @@ def run(cfg=None, examples_per_label: int = 1, labels: Optional[Sequence[str]] =
                 "top_class_probabilities": [(str(names[classes[j]]), float(proba[r, j])) for j in top],
                 "test_row": int(r),
             })
+    # Local SHAP explanation of the binary decision for each selected flow (when the SHAP background was saved).
+    from src.explainability.shap_explainer import BACKGROUND_FILE, build_explainer, explain_single
+    bg_path = get_absolute_path(cfg.paths.results_dir) / "explainability" / BACKGROUND_FILE
+    explainer, feature_names = None, None
+    if bg_path.exists() and selected:
+        binary = CICIDS2017Detector.load("binary", "xgboost", artifacts_dir=cfg.paths.artifacts_dir)
+        explainer = build_explainer(binary.model.model.get_booster(), np.load(bg_path))
+        feature_names = list(binary.pipeline.feature_names_out_)
+    else:
+        logger.warning(f"No SHAP background at {bg_path}; reports will say that no local explanation was computed.")
+    for det in selected:
+        if explainer is not None:
+            det["explanation"] = explain_single(explainer, X_test[det["test_row"]], feature_names, top_k=5)
+
     out_dir = get_absolute_path(cfg.paths.results_dir) / "threat_intelligence" / "reports"
     reports = []
     for det in selected:
-        rep = generate_report(det, index, catalog, client, cfg.fusion.severity_thresholds, top_k=int(rag_cfg.top_k_retrieval))
+        rep = generate_report(det, index, catalog, client, cfg.risk, top_k=int(rag_cfg.top_k_retrieval))
         save_json(rep, out_dir / f"report_{det['predicted_label'].replace(' ', '_').replace('-', '')}_{det['test_row']}.json")
-        logger.info(f"Wrote report for {det['predicted_label']} (true: {det['true_label']}, severity {rep['severity']})")
+        logger.info(f"Wrote report for {det['predicted_label']} (true: {det['true_label']}, risk {rep['severity']}, score {rep['risk']['score']})")
         reports.append(rep)
     return reports
 

@@ -49,7 +49,7 @@ export function DataTab() {
 
       {(missingFeatures.length > 0 || infiniteFeatures.length > 0) && (
         <div className="card">
-          <h3>Bad values by feature</h3>
+          <h3>Missing and infinite values by feature</h3>
           <p className="muted">
             Missing values are imputed during preprocessing. Infinite values come from division by a zero duration and
             are replaced the same way.

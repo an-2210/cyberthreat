@@ -129,3 +129,32 @@ llm:
 experiments:
   output_format: "json"
   track_computational_cost: true
+
+# Transparent risk score (src/threat_intelligence/risk_engine.py). Every term is reported with its value and weight.
+#   score = sum(weight_i * term_i) / sum(weight_i over the terms that are available)
+# The impact values are an analyst POLICY assumption (how harmful each attack type is if it is real), not a measurement.
+risk:
+  weights:
+    supervised_confidence: 0.5   # classifier probability for the predicted attack type
+    anomaly_score: 0.2           # normalized anomaly score, used only when an anomaly detector ran on the row
+    impact: 0.3                  # policy value below
+  impact:
+    DoS Hulk: 0.7
+    DoS GoldenEye: 0.7
+    DoS slowloris: 0.6
+    DoS Slowhttptest: 0.6
+    DDoS: 0.8
+    PortScan: 0.3
+    FTP-Patator: 0.5
+    SSH-Patator: 0.7
+    Bot: 0.8
+    Web Attack - Brute Force: 0.6
+    Web Attack - XSS: 0.5
+    Web Attack - Sql Injection: 0.9
+    Infiltration: 0.9
+    Heartbleed: 0.9
+  levels:                        # minimum score for each level
+    CRITICAL: 0.8
+    HIGH: 0.6
+    MEDIUM: 0.4
+    LOW: 0.0
