@@ -111,29 +111,28 @@ cyberthreat/
 │   ├── 10_rag_cti.ipynb
 │   └── 11_final_evaluation.ipynb
 ├── src/
-│   ├── data/ (loaders.py, validators.py, dataset_adapters.py)
-│   ├── preprocessing/ (cleaning.py, encoding.py, scaling.py, feature_engineering.py)
-│   ├── models/ (baselines.py, xgboost_model.py, deep_models.py, model_factory.py)
-│   ├── anomaly_detection/ (autoencoder.py, isolation_forest.py, anomaly_scoring.py)
-│   ├── fusion/ (decision_fusion.py)
-│   ├── explainability/ (shap_explainer.py)
-│   ├── threat_intelligence/ (mitre_mapper.py, knowledge_base.py, retriever.py, rag_pipeline.py, report_generator.py)
-│   ├── evaluation/ (metrics.py, experiments.py, ablation.py, cross_dataset.py)
-│   └── utils/ (logging.py, config.py, reproducibility.py)
+│   ├── data/                 loaders, validators, dataset_adapters, splits, audit, eda
+│   ├── preprocessing/        cleaning, encoding, scaling, feature_engineering, leakage, pipeline, sampling
+│   ├── models/               baselines, supervised, xgboost_model, inference (CICIDS2017Detector), model_factory
+│   ├── anomaly_detection/    autoencoder, isolation_forest, common
+│   ├── fusion/               decision_fusion
+│   ├── explainability/       shap_explainer
+│   ├── threat_intelligence/  attack_mapping, detection_linkage, rag, report_generator, risk_engine
+│   ├── evaluation/           detection_metrics, ablation, cross_dataset, unsw_native, latency,
+│   │                         figures, tracker, xss_bruteforce_diagnostic, plots, metrics, experiments
+│   ├── utils/                config, io_utils, logging, plotting, reproducibility
+│   └── run_*.py              pipeline entry points (CIC-IDS2017, baselines, anomaly, hybrid, LOAO, rare class)
 ├── models/
 │   ├── checkpoints/
 │   └── artifacts/
 ├── configs/
 │   └── config.yaml
-├── results/
-│   ├── figures/
-│   ├── tables/
-│   ├── metrics/
-│   └── reports/
+├── results/                  metrics/, tables/, reports/, explainability/, threat_intelligence/ (figures/ and metrics/ are regenerated, not committed)
 ├── app/
-│   ├── backend/
-│   └── frontend/
-├── tests/
+│   ├── backend/              FastAPI (app/backend/main.py)
+│   ├── frontend/             React + Vite dashboard
+│   └── sample_flows_mixed.csv  190 labelled real CIC-IDS2017 flows for trying the dashboard
+├── tests/                    unit, integration and end-to-end tests
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
@@ -231,8 +230,10 @@ proba = det.predict_proba(raw_df)   # (n_rows, n_labels); columns follow det.lab
 - Duplicate removal is exact (all feature values and the label must match).
 - The CIC-IDS2017 flow records carry no timestamps, host names or IP addresses. Affected asset, frequency per source and persistence are therefore not part of the risk score; each result says so.
 - The risk impact values in `configs/config.yaml` (`risk.impact`) are an analyst policy assumption, not a measurement.
-- The SVM baseline is linear (`LinearSVC`). The RBF SVM in the config is not feasible on about 500k rows.
+- The RBF SVM in the config is not feasible on about 500k rows, so the linear SVM baseline is used instead.
 - The UNSW-NB15 transfer from CIC-IDS2017 does not carry over with the shared features; the UNSW-native model is evaluated separately and is in-domain only.
+- The SVM baseline is trained by SGD (`SGDClassifier`, hinge loss). An exact LinearSVC fit over the 15 classes did not finish in a practical time.
+- The model never predicts SQL injection on the test data, so there is no CTI report for that label.
 
 ---
 
@@ -241,19 +242,24 @@ proba = det.predict_proba(raw_df)   # (n_rows, n_labels); columns follow det.lab
 Run from the repository root, after the CIC-IDS2017 pipeline has produced the saved models:
 
 ```bash
-python -m src.run_baselines_cicids2017          # Logistic Regression and linear SVM on the same rows (writes results/metrics/cicids2017_baseline_*.json)
-python -m src.explainability.shap_explainer     # SHAP background and sample used by the reports and the dashboard
-python -m src.evaluation.figures metrics        # precision-recall, ROC, model comparison, known vs unseen, ablation figures
-python -m src.evaluation.figures shap           # SHAP summary figure
-python -m src.evaluation.figures anomaly        # autoencoder score distribution (needs torch; separate process)
-python -m src.evaluation.tracker                # results/metrics/experiments.csv: one row per model and split
-python -m src.threat_intelligence.report_generator   # grounded CTI reports (needs Ollama and the FAISS index)
-python -m pytest -q                             # unit and integration tests
+python -m src.run_baselines_cicids2017               # Logistic Regression and linear SVM (SGD, hinge loss) on the pipeline's training rows
+python -m src.explainability.shap_explainer          # SHAP background and sample used by the reports and the dashboard
+python -m src.evaluation.figures metrics             # precision-recall, ROC, model comparison, known vs unseen, ablation figures
+python -m src.evaluation.figures shap                # SHAP summary figure
+python -m src.evaluation.figures anomaly             # autoencoder score distribution (needs torch; separate process)
+python -m src.evaluation.tracker                     # results/metrics/experiments.csv: one row per model and split
+python -m src.threat_intelligence.report_generator   # CTI reports (needs Ollama and the FAISS index)
+python -m pytest -q                                  # unit, integration and end-to-end tests
 ```
 
-**Risk score** (`src/threat_intelligence/risk_engine.py`): `score = Σ weight × term / Σ weight` over the terms that are available. The terms are the classifier's confidence, the impact value of the attack type, and the anomaly score when an anomaly detector ran. Every term, weight and contribution is stored with the result. Levels (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) come from `risk.levels`. Benign traffic is not rated.
+Outputs: `results/metrics/cicids2017_baseline_*.json` (baselines), `results/metrics/experiments.csv` (tracker), `results/figures/*.png` (figures) and `results/threat_intelligence/reports/*.json` (CTI reports). The figures and metric JSON files are excluded by `.gitignore`, so they are regenerated locally rather than committed.
 
-**Dashboard**: start the API with `uvicorn app.backend.main:app --port 8000`, then the frontend with `cd app/frontend && npm run dev` (http://localhost:3000). The *Try it* tab analyses an uploaded flow file: risk per flow, attack types with ATT&CK techniques, a SHAP explanation for any flagged flow, downloads, and an Ollama-written detection report. The *Research* tab lists every experiment and the saved figures.
+**Risk score** (`src/threat_intelligence/risk_engine.py`): `score = Σ weight × term / Σ weight` over the terms that are available. The terms are the classifier's confidence, the impact value of the attack type (`risk.impact`, an analyst policy assumption), and the anomaly score when an anomaly detector ran. Each term, weight and contribution is stored with the result. Levels (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) come from `risk.levels`. Benign traffic is not rated; flagged flows without a named attack type are `UNRATED`.
+
+**Dashboard**: start the API with `uvicorn app.backend.main:app --port 8000`, then the frontend with `cd app/frontend && npm run dev` (http://localhost:3000). Tabs:
+- **Overview, Data, Models, Unknown attacks, UNSW-NB15**: the pipeline results.
+- **Research**: every experiment in `experiments.csv` and the saved figures.
+- **Try it**: upload a flow CSV and click *Analyse*. It shows risk per flow, the attack types with ATT&CK techniques, a SHAP explanation for any flagged flow, CSV and JSON downloads, and an Ollama-written detection report.
 
 ---
 
