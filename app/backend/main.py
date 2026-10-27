@@ -332,3 +332,98 @@ def family_holdout() -> Dict[str, Any]:
         "nHeldOut": s["n_held_out_groups"],
         "nLowSample": s["n_low_sample_held_out"],
     }
+
+
+# ---------------------------------------------------------------------------
+# UNSW-NB15: native model, TTL ablation, Fuzzers, and CIC-to-UNSW transfer
+# ---------------------------------------------------------------------------
+
+UNSW_NATIVE = METRICS / "unsw_native_all_features.json"
+UNSW_TTL = METRICS / "unsw_native_ttl_ablation.json"
+UNSW_FUZZERS = METRICS / "unsw_native_fuzzers_fix.json"
+UNSW_DERIVED = METRICS / "unsw_native_derived_features.json"
+UNSW_IN_DOMAIN = METRICS / "unsw_in_domain_shared_features.json"
+CIC_TO_UNSW = METRICS / "cross_dataset_cic_to_unsw.json"
+
+TTL_VARIANT_LABELS = {
+    "all_features": "All features",
+    "without_ttl": "Without TTL fields",
+    "only_ttl": "Only TTL fields",
+}
+
+
+def _binary_summary(m: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: m[k] for k in ("accuracy", "precision", "recall", "f1", "fpr", "roc_auc")}
+
+
+@app.get("/api/unsw")
+def unsw() -> Dict[str, Any]:
+    """UNSW-NB15 results: the UNSW-native model, what it relies on, Fuzzers, and the CIC-to-UNSW transfer."""
+    native = _read_json(UNSW_NATIVE)
+    ttl = _read_json(UNSW_TTL)
+    fuzz = _read_json(UNSW_FUZZERS)
+    derived = _read_json(UNSW_DERIVED)
+    cross = _read_json(CIC_TO_UNSW)
+    in_domain = _read_json(UNSW_IN_DOMAIN)
+
+    variants = ttl["variants"]
+    categories = sorted(variants["all_features"]["per_attack_category"].items(), key=lambda kv: -kv[1]["support"])
+    per_category = [
+        {
+            "category": cat,
+            "support": stats["support"],
+            **{key: variants[key]["per_attack_category"][cat]["recall"] for key in TTL_VARIANT_LABELS},
+        }
+        for cat, stats in categories
+    ]
+
+    seed_runs = derived["summary"]
+    fuzzers_variants = [
+        {"key": key, "label": label, "fuzzersRecall": fuzz["variants"][key]["per_attack_category"]["Fuzzers"]["recall"],
+         "f1": fuzz["variants"][key]["test"]["f1"]}
+        for key, label in (("binary_xgboost", "Binary XGBoost (headline model)"),
+                           ("multiclass_xgboost", "Multiclass XGBoost"))
+    ]
+    return {
+        "native": {
+            "featureCount": len(native["features_used"]),
+            "threshold": native["threshold"]["value"],
+            "test": _binary_summary(native["unsw_test"]),
+            "confusionMatrix": native["unsw_test"]["confusion_matrix"],
+            "topFeatures": native["top_features_by_importance"],
+            "rows": native["shape"],
+            "leakageFlagged": native["leakage_scan_flagged"],
+            "leakageTopFeature": native["leakage_scan_top"][0],
+        },
+        "ttl": {
+            "variants": [
+                {"key": key, "label": label, "featureCount": len(variants[key]["features"]),
+                 "test": variants[key]["test"], "fuzzersRecall": variants[key]["per_attack_category"]["Fuzzers"]["recall"]}
+                for key, label in TTL_VARIANT_LABELS.items()
+            ],
+            "perCategory": per_category,
+        },
+        "fuzzers": {
+            "chosenOnValidation": fuzz["chosen_on_validation"],
+            "variants": fuzzers_variants,
+            "seedRuns": [
+                {"key": "baseline", "label": "Binary XGBoost, 3 seeds",
+                 "fuzzersRecall": seed_runs["baseline"]["test_fuzzers_recall"],
+                 "f1": seed_runs["baseline"]["test_f1"]},
+                {"key": "with_derived", "label": "Binary + ratio features, 3 seeds",
+                 "fuzzersRecall": seed_runs["with_derived"]["test_fuzzers_recall"],
+                 "f1": seed_runs["with_derived"]["test_f1"]},
+            ],
+        },
+        "transfer": {
+            "cicInDomain": _binary_summary(cross["in_domain_cic_test"]),
+            "transferAtHalf": _binary_summary(cross["transfer_unsw_nb15_test_threshold_0_5"]),
+            "calibrated": {"threshold": cross["calibrated_threshold"]["value"],
+                           **_binary_summary(cross["transfer_unsw_nb15_test_calibrated"])},
+            "unswInDomain": {"threshold": in_domain["threshold"]["value"], **_binary_summary(in_domain["unsw_test"])},
+            "featureShift": [
+                {"feature": r["feature"], "aucCic": r["auc_cic"], "aucUnsw": r["auc_unsw"]}
+                for r in cross["feature_shift"]
+            ],
+        },
+    }
