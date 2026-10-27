@@ -1,0 +1,17 @@
+label,technique_id,technique_name,tactics,confidence,rationale
+BENIGN,,,,,Benign traffic; no technique.
+DoS Hulk,T1499.002,Service Exhaustion Flood,impact,high,T1499.002 describes a simple HTTP flood that overwhelms a web server; Hulk is an HTTP request flood.
+DoS GoldenEye,T1499.002,Service Exhaustion Flood,impact,high,T1499.002 covers HTTP floods against web services; GoldenEye is an HTTP flood with keep-alive.
+DoS slowloris,T1499,Endpoint Denial of Service,impact,medium,Slow HTTP connections exhaust server resources (T1499). Parent technique used because the definitions do not separate slow-connection attacks from flood attacks.
+DoS Slowhttptest,T1499,Endpoint Denial of Service,impact,medium,Slow HTTP requests exhaust server resources (T1499). Parent technique used for the same reason as slowloris.
+DDoS,T1498.001,Direct Network Flood,impact,high,T1498.001 describes a high-volume direct network flood sent by one or more systems at a target.
+PortScan,T1046,Network Service Discovery,discovery,high,Probing ports and services to discover which are reachable (Network Service Discovery).
+FTP-Patator,T1110.001,Password Guessing,credential-access,high,T1110.001 describes systematic password guessing against a login.
+SSH-Patator,T1110.001,Password Guessing,credential-access,high,T1110.001 describes systematic password guessing against a login.
+Bot,T1071.001,Web Protocols,command-and-control,medium,T1071.001 describes C2 traffic embedded in web protocols; the dataset's bot polls over HTTP.
+Web Attack - Brute Force,T1110.001,Password Guessing,credential-access,medium,Repeated login attempts against a web application (password guessing).
+Web Attack - XSS,T1190,Exploit Public-Facing Application,initial-access,medium,T1190 covers exploiting a weakness in an Internet-facing web application; the XSS flaw is the weakness exploited.
+Web Attack - XSS,T1189,Drive-by Compromise,initial-access,medium,"T1189 (Drive-by Compromise) names cross-site scripting explicitly as a way to insert malicious scripts through web application interfaces, which is the XSS payload's effect on the victim's browser."
+Web Attack - Sql Injection,T1190,Exploit Public-Facing Application,initial-access,high,T1190 explicitly lists databases and web applications as exploitable public-facing systems; SQL injection is such an exploit.
+Heartbleed,T1190,Exploit Public-Facing Application,initial-access,high,Exploitation of an Internet-facing TLS service (CVE-2014-0160) is a software-weakness exploit covered by T1190.
+Infiltration,,,,,"CIC-IDS2017 describes Infiltration as an exploit followed by backdoor activity. No single ATT&CK technique matches that end-to-end sequence, so no technique is assigned."

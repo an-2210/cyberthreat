@@ -7,8 +7,6 @@ torch>=2.0.0
 lightgbm>=4.0.0
 scipy>=1.10.0
 
-# Explainability
-shap>=0.42.0
 
 # Vector Store & Retrieval (RAG)
 faiss-cpu>=1.7.4

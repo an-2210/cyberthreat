@@ -120,6 +120,12 @@ rag_cti:
   top_k_retrieval: 5
   max_report_tokens: 1500
 
+llm:
+  provider: "ollama"          # local model server; no data leaves this machine
+  ollama_host: "http://localhost:11434"
+  ollama_model: "qwen2.5:14b" # pulled locally; alternative installed model: llama3.2:3b
+  timeout_seconds: 600
+
 experiments:
   output_format: "json"
   track_computational_cost: true
