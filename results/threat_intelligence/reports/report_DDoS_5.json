@@ -1,0 +1,86 @@
+{
+  "report_id": "92f7d7a4-3402-4341-98df-3c47c4499faf",
+  "created_utc": "2026-10-27T07:03:18+00:00",
+  "predicted_label": "DDoS",
+  "true_label": "DDoS",
+  "confidence": 0.9998,
+  "severity": "critical",
+  "label_status": "mapped",
+  "attack_description": "The detected network event involves a Direct Network Flood (T1498.001) attack, where a high volume of network traffic is sent to a target to cause a denial of service (DoS). This attack aims to reduce the availability and functionality of the targeted system(s) and network by overwhelming it with traffic, often using botnets to generate the flood from multiple systems spread across the internet.",
+  "potential_impact": "The potential impact of this attack includes degraded or blocked availability of targeted resources such as websites, email services, DNS, and web-based applications. The network bandwidth capacity can be exhausted, leading to service unavailability for legitimate users. In severe cases, the attack can saturate the target network, making it difficult to distinguish between malicious traffic and legitimate client requests.",
+  "recommended_mitigation": [
+    "Implement traffic filtering and rate limiting to prevent excessive traffic from overwhelming network resources.",
+    "Deploy intrusion detection systems (IDS) and intrusion prevention systems (IPS) to monitor and block suspicious traffic patterns.",
+    "Use network segmentation to isolate critical services and limit the impact of a potential flood attack.",
+    "Maintain and regularly update security measures to detect and mitigate botnet activities that can be used to launch such attacks."
+  ],
+  "mitre_mapping": [
+    {
+      "technique_id": "T1498.001",
+      "technique_name": "Direct Network Flood",
+      "tactics": [
+        "impact"
+      ],
+      "confidence": "high",
+      "url": "https://attack.mitre.org/techniques/T1498/001"
+    }
+  ],
+  "evidence": {
+    "top_class_probabilities": [
+      [
+        "DDoS",
+        0.9997712969779968
+      ],
+      [
+        "BENIGN",
+        0.00019248647731728852
+      ],
+      [
+        "DoS Hulk",
+        1.9614099073805846e-05
+      ]
+    ],
+    "retrieved_context": [
+      {
+        "id": "ATTACK:T1498.001",
+        "title": "T1498.001 Direct Network Flood",
+        "score": 0.6945
+      },
+      {
+        "id": "ATTACK:T1498",
+        "title": "T1498 Network Denial of Service",
+        "score": 0.6194
+      },
+      {
+        "id": "PROFILE:DDoS",
+        "title": "CIC-IDS2017 label: DDoS",
+        "score": 0.6142
+      },
+      {
+        "id": "ATTACK:T1499.002",
+        "title": "T1499.002 Service Exhaustion Flood",
+        "score": 0.5511
+      },
+      {
+        "id": "ATTACK:T1499",
+        "title": "T1499 Endpoint Denial of Service",
+        "score": 0.4929
+      }
+    ]
+  },
+  "citations": [
+    "ATTACK:T1498.001",
+    "PROFILE:DDoS"
+  ],
+  "validation": {
+    "dropped_citations": [],
+    "llm_fields_ok": true
+  },
+  "generator": {
+    "llm": "ollama:qwen2.5:14b",
+    "retrieval": "faiss IndexFlatIP, all-MiniLM-L6-v2",
+    "temperature": 0,
+    "seed": 42
+  },
+  "disclaimer": "Generated from retrieved project and ATT&CK text. Analyst review required before action."
+}

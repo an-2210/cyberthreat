@@ -1,0 +1,84 @@
+{
+  "n_rows": 499951,
+  "label_accuracy": 0.9987338759198402,
+  "technique_set_agreement": 0.998761878664109,
+  "unmapped_true_rows": 4,
+  "unmapped_predicted_rows": 2,
+  "per_technique": [
+    {
+      "technique_id": "T1046",
+      "technique_name": "Network Service Discovery",
+      "true_rows": 18278,
+      "predicted_rows": 18468,
+      "correct_rows": 18265,
+      "technique_recall": 0.9992887624466572,
+      "technique_precision": 0.989008013861815
+    },
+    {
+      "technique_id": "T1071.001",
+      "technique_name": "Web Protocols",
+      "true_rows": 391,
+      "predicted_rows": 353,
+      "correct_rows": 307,
+      "technique_recall": 0.7851662404092071,
+      "technique_precision": 0.8696883852691218
+    },
+    {
+      "technique_id": "T1110.001",
+      "technique_name": "Password Guessing",
+      "true_rows": 2089,
+      "predicted_rows": 2075,
+      "correct_rows": 2004,
+      "technique_recall": 0.9593106749640976,
+      "technique_precision": 0.9657831325301205
+    },
+    {
+      "technique_id": "T1189",
+      "technique_name": "Drive-by Compromise",
+      "true_rows": 118,
+      "predicted_rows": 117,
+      "correct_rows": 39,
+      "technique_recall": 0.3305084745762712,
+      "technique_precision": 0.3333333333333333
+    },
+    {
+      "technique_id": "T1190",
+      "technique_name": "Exploit Public-Facing Application",
+      "true_rows": 125,
+      "predicted_rows": 117,
+      "correct_rows": 39,
+      "technique_recall": 0.312,
+      "technique_precision": 0.3333333333333333
+    },
+    {
+      "technique_id": "T1498.001",
+      "technique_name": "Direct Network Flood",
+      "true_rows": 25531,
+      "predicted_rows": 25519,
+      "correct_rows": 25518,
+      "technique_recall": 0.9994908150875407,
+      "technique_precision": 0.9999608135115012
+    },
+    {
+      "technique_id": "T1499",
+      "technique_name": "Endpoint Denial of Service",
+      "true_rows": 2158,
+      "predicted_rows": 2163,
+      "correct_rows": 2149,
+      "technique_recall": 0.9958294717330862,
+      "technique_precision": 0.9935275080906149
+    },
+    {
+      "technique_id": "T1499.002",
+      "technique_name": "Service Exhaustion Flood",
+      "true_rows": 36600,
+      "predicted_rows": 36652,
+      "correct_rows": 36588,
+      "technique_recall": 0.9996721311475409,
+      "technique_precision": 0.9982538469933427
+    }
+  ],
+  "model": "xgboost (multiclass, saved artifact)",
+  "data_source": "real CIC-IDS2017 CSVs (held-out test split)",
+  "attack_version": "20.0"
+}

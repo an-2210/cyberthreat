@@ -1,0 +1,123 @@
+{
+  "file": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+  "rows_after_dedupe": 164300,
+  "label_counts": {
+    "BENIGN": 162157,
+    "Web Attack - Brute Force": 1470,
+    "Web Attack - XSS": 652,
+    "Web Attack - Sql Injection": 21
+  },
+  "pairs": {
+    "XSS_vs_BruteForce": {
+      "positive": "Web Attack - XSS",
+      "negative": "Web Attack - Brute Force",
+      "rows": 2122,
+      "top_single_feature_auc": {
+        "Flow Duration": 0.5907,
+        "Flow IAT Min": 0.5817,
+        "Fwd Packets/s": 0.5684,
+        "Fwd IAT Min": 0.5562,
+        "Down/Up Ratio": 0.5552
+      },
+      "features_with_auc_ge_0.9": 0,
+      "random_forest_5fold": {
+        "roc_auc": 0.6929473936813989,
+        "balanced_accuracy": 0.5858050582196068,
+        "n_rows": 2122,
+        "n_positive": 652
+      }
+    },
+    "XSS_vs_BENIGN": {
+      "positive": "Web Attack - XSS",
+      "negative": "BENIGN",
+      "rows": 162809,
+      "top_single_feature_auc": {
+        "Init_Win_bytes_backward": 0.938,
+        "Flow Bytes/s": 0.938,
+        "Max Packet Length": 0.9188,
+        "Fwd Packet Length Max": 0.9182,
+        "Packet Length Mean": 0.9179
+      },
+      "features_with_auc_ge_0.9": 11,
+      "random_forest_5fold": {
+        "roc_auc": 0.9987624089673603,
+        "balanced_accuracy": 0.973159509202454,
+        "n_rows": 162809,
+        "n_positive": 652
+      }
+    },
+    "BruteForce_vs_BENIGN": {
+      "positive": "Web Attack - Brute Force",
+      "negative": "BENIGN",
+      "rows": 163627,
+      "top_single_feature_auc": {
+        "Init_Win_bytes_backward": 0.9368,
+        "Flow Bytes/s": 0.9217,
+        "Init_Win_bytes_forward": 0.8967,
+        "Average Packet Size": 0.8726,
+        "Max Packet Length": 0.8725
+      },
+      "features_with_auc_ge_0.9": 2,
+      "random_forest_5fold": {
+        "roc_auc": 0.999956248834012,
+        "balanced_accuracy": 0.9928571428571429,
+        "n_rows": 163627,
+        "n_positive": 1470
+      }
+    }
+  },
+  "payload_feature_auc": {
+    "XSS_vs_BruteForce": {
+      "Total Length of Fwd Packets": 0.5319,
+      "Total Length of Bwd Packets": 0.5317,
+      "Fwd Packet Length Max": 0.5339,
+      "Fwd Packet Length Mean": 0.5319,
+      "Fwd Packet Length Std": 0.5326,
+      "Bwd Packet Length Max": 0.5312,
+      "Bwd Packet Length Mean": 0.5313,
+      "Bwd Packet Length Std": 0.5322,
+      "Average Packet Size": 0.5313,
+      "Avg Fwd Segment Size": 0.5319,
+      "Avg Bwd Segment Size": 0.5313,
+      "Packet Length Mean": 0.5313,
+      "Flow Bytes/s": 0.5322,
+      "Flow Packets/s": 0.5259
+    },
+    "XSS_vs_BENIGN": {
+      "Total Length of Fwd Packets": 0.9165,
+      "Total Length of Bwd Packets": 0.8676,
+      "Fwd Packet Length Max": 0.9182,
+      "Fwd Packet Length Min": 0.8213,
+      "Fwd Packet Length Mean": 0.9163,
+      "Fwd Packet Length Std": 0.6356,
+      "Bwd Packet Length Max": 0.8682,
+      "Bwd Packet Length Min": 0.7972,
+      "Bwd Packet Length Mean": 0.8671,
+      "Bwd Packet Length Std": 0.6014,
+      "Average Packet Size": 0.9179,
+      "Avg Fwd Segment Size": 0.9163,
+      "Avg Bwd Segment Size": 0.8671,
+      "Packet Length Mean": 0.9179,
+      "Flow Bytes/s": 0.938,
+      "Flow Packets/s": 0.8407
+    },
+    "BruteForce_vs_BENIGN": {
+      "Total Length of Fwd Packets": 0.862,
+      "Total Length of Bwd Packets": 0.8198,
+      "Fwd Packet Length Max": 0.8615,
+      "Fwd Packet Length Min": 0.8213,
+      "Fwd Packet Length Mean": 0.8568,
+      "Fwd Packet Length Std": 0.5962,
+      "Bwd Packet Length Max": 0.8248,
+      "Bwd Packet Length Min": 0.7972,
+      "Bwd Packet Length Mean": 0.8329,
+      "Bwd Packet Length Std": 0.5737,
+      "Average Packet Size": 0.8726,
+      "Avg Fwd Segment Size": 0.8568,
+      "Avg Bwd Segment Size": 0.8329,
+      "Packet Length Mean": 0.8692,
+      "Flow Bytes/s": 0.9217,
+      "Flow Packets/s": 0.8077
+    }
+  }
+}

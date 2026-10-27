@@ -1,0 +1,97 @@
+{
+  "report_id": "81737975-8466-49f3-a7ab-5a25b4ac1670",
+  "created_utc": "2026-10-27T07:05:24+00:00",
+  "predicted_label": "Web Attack - XSS",
+  "true_label": "Web Attack - Brute Force",
+  "confidence": 0.4944,
+  "severity": "medium",
+  "label_status": "mapped",
+  "attack_description": "The detected network event is predicted to be a Web Attack - XSS with a model confidence of 0.494. This prediction is based on the exploitation of a cross-site scripting (XSS) vulnerability in a web application, which aligns with the ATT&CK techniques T1190 (Exploit Public-Facing Application) and T1189 (Drive-by Compromise). XSS attacks involve injecting malicious scripts into web pages viewed by other users, potentially allowing an attacker to execute scripts in the context of the victim's browser session.",
+  "potential_impact": "The potential impact of a successful XSS attack includes unauthorized access to user sessions, theft of sensitive information, and the ability to perform actions on behalf of the victim user. This can lead to data breaches, financial loss, and reputational damage for the affected organization.",
+  "recommended_mitigation": [
+    "Implement input validation and output encoding on web applications to prevent XSS attacks.",
+    "Use Content Security Policy (CSP) to restrict the sources from which scripts can be loaded.",
+    "Regularly update and patch web applications to address known vulnerabilities.",
+    "Monitor and analyze web traffic for suspicious activities indicative of XSS attacks."
+  ],
+  "mitre_mapping": [
+    {
+      "technique_id": "T1190",
+      "technique_name": "Exploit Public-Facing Application",
+      "tactics": [
+        "initial-access"
+      ],
+      "confidence": "medium",
+      "url": "https://attack.mitre.org/techniques/T1190"
+    },
+    {
+      "technique_id": "T1189",
+      "technique_name": "Drive-by Compromise",
+      "tactics": [
+        "initial-access"
+      ],
+      "confidence": "medium",
+      "url": "https://attack.mitre.org/techniques/T1189"
+    }
+  ],
+  "evidence": {
+    "top_class_probabilities": [
+      [
+        "Web Attack - XSS",
+        0.4943509101867676
+      ],
+      [
+        "Web Attack - Brute Force",
+        0.26554781198501587
+      ],
+      [
+        "DoS Slowhttptest",
+        0.14102956652641296
+      ]
+    ],
+    "retrieved_context": [
+      {
+        "id": "PROFILE:Web Attack - XSS",
+        "title": "CIC-IDS2017 label: Web Attack - XSS",
+        "score": 0.5693
+      },
+      {
+        "id": "ATTACK:T1189",
+        "title": "T1189 Drive-by Compromise",
+        "score": 0.5287
+      },
+      {
+        "id": "PROFILE:Web Attack - Brute Force",
+        "title": "CIC-IDS2017 label: Web Attack - Brute Force",
+        "score": 0.5095
+      },
+      {
+        "id": "PROFILE:Web Attack - Sql Injection",
+        "title": "CIC-IDS2017 label: Web Attack - Sql Injection",
+        "score": 0.4917
+      },
+      {
+        "id": "ATTACK:T1071.001",
+        "title": "T1071.001 Web Protocols",
+        "score": 0.4546
+      }
+    ]
+  },
+  "citations": [
+    "PROFILE:Web Attack - XSS",
+    "ATTACK:T1189"
+  ],
+  "validation": {
+    "dropped_citations": [
+      "ATTACK:T1190"
+    ],
+    "llm_fields_ok": true
+  },
+  "generator": {
+    "llm": "ollama:qwen2.5:14b",
+    "retrieval": "faiss IndexFlatIP, all-MiniLM-L6-v2",
+    "temperature": 0,
+    "seed": 42
+  },
+  "disclaimer": "Generated from retrieved project and ATT&CK text. Analyst review required before action."
+}

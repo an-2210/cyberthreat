@@ -1,0 +1,254 @@
+{
+  "catalog": {
+    "source_url": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack.json",
+    "local_path": "/Users/anweshalaha/Desktop/cybthr/cyberthreat/data/external/enterprise-attack.json",
+    "sha256": "81113ba98afa2928f3dcff62022539f7ce30c315c32e14422f11ff95ce534352",
+    "attack_version": "20.0",
+    "active_techniques_including_subtechniques": 706
+  },
+  "mapping_type": "analyst-defined lookup table; technique IDs and names validated against the catalog above",
+  "labels": {
+    "BENIGN": {
+      "status": "benign",
+      "techniques": [],
+      "unmapped_reason": null
+    },
+    "DoS Hulk": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1499.002",
+          "technique_name": "Service Exhaustion Flood",
+          "tactics": [
+            "impact"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1499/002",
+          "confidence": "high",
+          "rationale": "T1499.002 describes a simple HTTP flood that overwhelms a web server; Hulk is an HTTP request flood."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "DoS GoldenEye": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1499.002",
+          "technique_name": "Service Exhaustion Flood",
+          "tactics": [
+            "impact"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1499/002",
+          "confidence": "high",
+          "rationale": "T1499.002 covers HTTP floods against web services; GoldenEye is an HTTP flood with keep-alive."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "DoS slowloris": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1499",
+          "technique_name": "Endpoint Denial of Service",
+          "tactics": [
+            "impact"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1499",
+          "confidence": "medium",
+          "rationale": "Slow HTTP connections exhaust server resources (T1499). Parent technique used because the definitions do not separate slow-connection attacks from flood attacks."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "DoS Slowhttptest": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1499",
+          "technique_name": "Endpoint Denial of Service",
+          "tactics": [
+            "impact"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1499",
+          "confidence": "medium",
+          "rationale": "Slow HTTP requests exhaust server resources (T1499). Parent technique used for the same reason as slowloris."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "DDoS": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1498.001",
+          "technique_name": "Direct Network Flood",
+          "tactics": [
+            "impact"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1498/001",
+          "confidence": "high",
+          "rationale": "T1498.001 describes a high-volume direct network flood sent by one or more systems at a target."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "PortScan": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1046",
+          "technique_name": "Network Service Discovery",
+          "tactics": [
+            "discovery"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1046",
+          "confidence": "high",
+          "rationale": "Probing ports and services to discover which are reachable (Network Service Discovery)."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "FTP-Patator": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1110.001",
+          "technique_name": "Password Guessing",
+          "tactics": [
+            "credential-access"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1110/001",
+          "confidence": "high",
+          "rationale": "T1110.001 describes systematic password guessing against a login."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "SSH-Patator": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1110.001",
+          "technique_name": "Password Guessing",
+          "tactics": [
+            "credential-access"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1110/001",
+          "confidence": "high",
+          "rationale": "T1110.001 describes systematic password guessing against a login."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "Bot": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1071.001",
+          "technique_name": "Web Protocols",
+          "tactics": [
+            "command-and-control"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1071/001",
+          "confidence": "medium",
+          "rationale": "T1071.001 describes C2 traffic embedded in web protocols; the dataset's bot polls over HTTP."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "Web Attack - Brute Force": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1110.001",
+          "technique_name": "Password Guessing",
+          "tactics": [
+            "credential-access"
+          ],
+          "is_subtechnique": true,
+          "url": "https://attack.mitre.org/techniques/T1110/001",
+          "confidence": "medium",
+          "rationale": "Repeated login attempts against a web application (password guessing)."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "Web Attack - XSS": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "technique_name": "Exploit Public-Facing Application",
+          "tactics": [
+            "initial-access"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1190",
+          "confidence": "medium",
+          "rationale": "T1190 covers exploiting a weakness in an Internet-facing web application; the XSS flaw is the weakness exploited."
+        },
+        {
+          "technique_id": "T1189",
+          "technique_name": "Drive-by Compromise",
+          "tactics": [
+            "initial-access"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1189",
+          "confidence": "medium",
+          "rationale": "T1189 (Drive-by Compromise) names cross-site scripting explicitly as a way to insert malicious scripts through web application interfaces, which is the XSS payload's effect on the victim's browser."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "Web Attack - Sql Injection": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "technique_name": "Exploit Public-Facing Application",
+          "tactics": [
+            "initial-access"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1190",
+          "confidence": "high",
+          "rationale": "T1190 explicitly lists databases and web applications as exploitable public-facing systems; SQL injection is such an exploit."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "Heartbleed": {
+      "status": "mapped",
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "technique_name": "Exploit Public-Facing Application",
+          "tactics": [
+            "initial-access"
+          ],
+          "is_subtechnique": false,
+          "url": "https://attack.mitre.org/techniques/T1190",
+          "confidence": "high",
+          "rationale": "Exploitation of an Internet-facing TLS service (CVE-2014-0160) is a software-weakness exploit covered by T1190."
+        }
+      ],
+      "unmapped_reason": null
+    },
+    "Infiltration": {
+      "status": "unmapped",
+      "techniques": [],
+      "unmapped_reason": "CIC-IDS2017 describes Infiltration as an exploit followed by backdoor activity. No single ATT&CK technique matches that end-to-end sequence, so no technique is assigned."
+    }
+  }
+}
